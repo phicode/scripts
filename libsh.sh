@@ -50,7 +50,7 @@ extract() {
 	file=$(basename "$src")
 	swname=$(expr substr $file 1 $((${#file}-$extlen)))
 	srcdir=$(dirname "$1")
-	abssrcdir="${dir}"
+	abssrcdir="${srcdir}"
 
 	# handle relativ paths
 	if [ $(expr index "$srcdir" /) -ne 1 ]; then
