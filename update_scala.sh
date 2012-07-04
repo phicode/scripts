@@ -39,6 +39,9 @@ for manp in ${manps}; do
 	mk_link "${src}" "${link}"
 done
 
-echo
-echo "Done. You may want to add the following line to your ~/.bashrc :"
-echo ". /opt/scala/current/misc/scala-tool-support/bash-completion/scala_completion.sh"
+echo "Done!"
+bc="/opt/scala/current/misc/scala-tool-support/bash-completion/scala_completion.sh"
+if [ -e "$bc" ]; then
+	echo "You may want to add the following line to your ~/.bashrc :"
+	echo ". $bc"
+fi
