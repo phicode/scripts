@@ -43,19 +43,19 @@ manps="man1/scala.1 man1/scalac.1 man1/scalap.1 man1/scaladoc.1 man1/fsc.1 man1/
 for executable in ${executables}; do
 	src="${srcdir}/${executable}"
 	link="${localbin}/${executable}"
-	mk_link "${src}" "${link}"
-	mk_executable "${src}"
+	mk_link "$src" "$link"
+	mk_executable "$src"
 done
 
 for manp in ${manps}; do
 	src="${srcman}/${manp}"
 	link="${localman}/${manp}"
-	man_dir=$(dirname "${link}")
-	if [ ! -d "${man_dir}" ]; then
+	man_dir=$(dirname "$link")
+	if [ ! -d "$man_dir" ]; then
 	    echo "Creating directory: ${man_dir}"
-	    mkdir -p "${man_dir}"
+	    mkdir -p "$man_dir"
 	fi
-	mk_link "${src}" "${link}"
+	mk_link "$src" "$link"
 done
 
 echo "Done!"

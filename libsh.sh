@@ -56,9 +56,9 @@ mk_link() {
 mk_executable() {
     dst=$1
 
-    if [ -e "${dst}" -a ! -x "${dst}" ]; then
+    if [ -e "$dst" -a ! -x "$dst" ]; then
         echo "Exec: $dst"
-        chmod 755 "${dst}"
+        chmod 755 "$dst"
     fi
 }
 
@@ -70,7 +70,7 @@ extract() {
 	file=$(basename "$src")
 	swname=$(expr substr $file 1 $((${#file}-$extlen)))
 	srcdir=$(dirname "$1")
-	abssrcdir="${srcdir}"
+	abssrcdir="$srcdir"
 
 	# handle relativ paths
 	if [ $(expr index "$srcdir" /) -ne 1 ]; then
@@ -88,10 +88,10 @@ extract() {
 	fi
         cd "$dstdir"
 
-	tar xzf "${absfile}"
+	tar xzf "$absfile"
 
 	if [ ! -d "$absextract" ]; then
-	    echo "Cant find folder ${absextract}"
+	    echo "Cant find folder $absextract"
 	    exit 1
 	fi
 
