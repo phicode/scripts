@@ -1,4 +1,5 @@
 #!/bin/bash
+
 # Copyright (c) 2012 Philipp Meinen <philipp@bind.ch>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -23,14 +24,8 @@
 #       SETUP                            #
 ##########################################
 # 1. create partitions
-# 2. cryptsetup luksFormat /dev/sdXy
-# 3. cryptsetup luksOpen /dev/sdXy name
-# 4. mkfs.ext2 /dev/mapper/name
-# 5. for UUID of the LUKS partition:
-#         cryptsetup luksUUID /dev/sdXy
-# 6. ext2 fs UUID:
-#         tune2fs -l /dev/mapper/sd_backup | grep UUID
-# 7.
+# 2. run init_crypto_partition.sh /dev/sdXy
+#    follow its instructions
 #    in /etc/fstab:
 #    UUID=put-ext2-fs-uuid-here /mnt/backup  auto  user,noauto,noatime,nodiratime  0  0
 
@@ -57,7 +52,7 @@ DATA_BASEDIR=/home/phil
 BACKUP_BASEDIR=$MOUNTPOINT
 
 BACKUP_DIRS="admin conf dev fh kochen literature misc multimedia webcomics Pictures .config .ssh .kde"
-BACKUP_FILES="backup.sh .hgrc"
+BACKUP_FILES="backup.sh .hgrc .gitconfig"
 
 LUKS_UUID="dc70a04a-0cb4-4e5f-ae6e-dc84ece106e6"
 LUKS_MAP_NAME="luks_sd_backup"
