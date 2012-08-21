@@ -1,5 +1,4 @@
 # Copyright (c) 2012 Philipp Meinen <philipp@bind.ch>
-
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -20,20 +19,20 @@
 # THE SOFTWARE.
 
 check_root() {
-        if [ $(whoami) != "root" ]; then
-            echo "Please run this program as root"
-            exit 1
-        fi
+    if [ $(whoami) != "root" ]; then
+        echo "Please run this program as root"
+        exit 1
+    fi
 }
 
 check_extension() {
-        file="$1"
-        ext="$2"
-        echo $file | grep -i "\\.${ext}$" > /dev/null
-        if [ $? -ne 0 ]; then
-            echo "extension missmatch, expected: $ext"
-            exit 1
-        fi
+    file="$1"
+    ext="$2"
+    echo $file | grep -i "${ext}$" > /dev/null
+    if [ $? -ne 0 ]; then
+        echo "extension missmatch, expected: $ext"
+        exit 1
+    fi
 }
 
 mk_link() {
@@ -64,16 +63,17 @@ mk_executable() {
 }
 
 extract() {
-        src="$1"
-        dstdir="$2"
+    src="$1"
+    dstdir="$2"
 	extlen="$3"
+    cmd="$4"
 	
 	file=$(basename "$src")
 	swname=$(expr substr $file 1 $((${#file}-$extlen)))
 	srcdir=$(dirname "$1")
 	abssrcdir="$srcdir"
 
-	# handle relativ paths
+	# handle relative paths
 	if [ $(expr index "$srcdir" /) -ne 1 ]; then
 	    abssrcdir="${PWD}/${srcdir}"
 	fi
@@ -87,9 +87,9 @@ extract() {
 		echo "Creating directory $dstdir"
 		mkdir -p "$dstdir"
 	fi
-        cd "$dstdir"
+    cd "$dstdir"
 
-	tar xzf "$absfile"
+	${cmd} "$absfile"
 
 	if [ ! -d "$absextract" ]; then
 	    echo "Cant find folder $absextract"

@@ -29,10 +29,10 @@ fi
 . "$(dirname "$0")/libsh.sh"
 
 check_root
-check_extension "$1" "tgz"
+check_extension "$1" "\\.tgz"
 
 # .tgz => 4
-extract "$1" "/opt/scala" 4
+extract "$1" "/opt/scala" 4 "tar xzf"
 
 localbin="/usr/local/bin"
 localman="/usr/share/local/man"
