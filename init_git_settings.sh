@@ -1,3 +1,5 @@
+#!/bin/sh
+
 # Copyright (c) 2012 Philipp Meinen <philipp@bind.ch>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
