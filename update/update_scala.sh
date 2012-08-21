@@ -21,22 +21,25 @@
 # THE SOFTWARE.
 
 if [ $# -ne 1 ]; then
-    echo "Usage: $0 <maven-distribution-archive>"
+    echo "Usage: $0 <scala-distribution-archive>"
     exit 1
 fi
 
 # load utility methods
-. "$(dirname "$0")/libsh.sh"
+. "$(dirname "$0")/../libsh.sh"
 
 check_root
-check_extension "$1" "\\-bin\\.tar\\.gz"
+check_extension "$1" "\\.tgz"
 
-# -bin.tar.gz => 7
-extract "$1" "/opt/maven" 11 "tar xzf"
+# .tgz => 4
+extract "$1" "/opt/scala" 4 "tar xzf"
 
 localbin="/usr/local/bin"
-srcdir="/opt/maven/current/bin"
-executables="mvn mvnDebug mvnyjp"
+localman="/usr/share/local/man"
+srcdir="/opt/scala/current/bin"
+srcman="/opt/scala/current/man"
+executables="scala scalac scalap scaladoc fsc sbaz sbaz-setup"
+manps="man1/scala.1 man1/scalac.1 man1/scalap.1 man1/scaladoc.1 man1/fsc.1 man1/sbaz.1"
 
 for executable in ${executables}; do
 	src="${srcdir}/${executable}"
@@ -45,4 +48,20 @@ for executable in ${executables}; do
 	mk_executable "$src"
 done
 
+for manp in ${manps}; do
+	src="${srcman}/${manp}"
+	link="${localman}/${manp}"
+	man_dir=$(dirname "$link")
+	if [ ! -d "$man_dir" ]; then
+	    echo "Creating directory: ${man_dir}"
+	    mkdir -p "$man_dir"
+	fi
+	mk_link "$src" "$link"
+done
+
 echo "Done!"
+bc="/opt/scala/current/misc/scala-tool-support/bash-completion/scala_completion.sh"
+if [ -e "$bc" ]; then
+	echo "You may want to add the following line to your ~/.bashrc :"
+	echo ". $bc"
+fi

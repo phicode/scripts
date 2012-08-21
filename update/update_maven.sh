@@ -20,48 +20,29 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+if [ $# -ne 1 ]; then
+    echo "Usage: $0 <maven-distribution-archive>"
+    exit 1
+fi
+
 # load utility methods
-. "$(dirname "$0")/libsh.sh"
+. "$(dirname "$0")/../libsh.sh"
 
 check_root
+check_extension "$1" "\\-bin\\.tar\\.gz"
 
-MAVEN_LATEST="apache-maven-3.0.4"
-SCALA_LATEST="scala-2.9.2"
+# -bin.tar.gz => 7
+extract "$1" "/opt/maven" 11 "tar xzf"
 
-SCALA_REPO="http://www.scala-lang.org/downloads/distrib/files"
-SCALA_EXT=".tgz"
-MAVEN_REPO="http://mirror.switch.ch/mirror/apache/dist/maven/binaries"
-MAVEN_EXT="-bin.tar.gz"
+localbin="/usr/local/bin"
+srcdir="/opt/maven/current/bin"
+executables="mvn mvnDebug mvnyjp"
 
-MAVEN_CHECK_BIN="/opt/maven/${MAVEN_LATEST}/bin/mvn"
-SCALA_CHECK_BIN="/opt/scala/${SCALA_LATEST}/bin/scala"
+for executable in ${executables}; do
+	src="${srcdir}/${executable}"
+	link="${localbin}/${executable}"
+	mk_link "$src" "$link"
+	mk_executable "$src"
+done
 
-download_and_install() {
-	name="$1"
-	check_bin="$2"
-	latest="$3"
-	ext="$4"
-	repo="$5"
-	script="$6"
-	if [ ! -e "$check_bin" ]; then
-	echo "downloading $name release: $latest"
-		FILE="${latest}${ext}"
-		REPO_FILE="${repo}/${FILE}"
-		STORE_FILE="/tmp/${FILE}"
-		DL_LOG="${STORE_FILE}.download-log"
-
-		wget -o "${DL_LOG}" -O "$STORE_FILE" "$REPO_FILE"
-		if [ $? -eq 0 ]; then
-			${script} "$STORE_FILE"
-		else
-			echo "download failed, see: $DL_LOG"
-		fi
-	else
-		echo "up-to-date: $name"
-	fi
-}
-
-
-download_and_install "maven" "$MAVEN_CHECK_BIN" "$MAVEN_LATEST" "$MAVEN_EXT" "$MAVEN_REPO" "$(dirname "$0")/update_maven.sh"
-download_and_install "scala" "$SCALA_CHECK_BIN" "$SCALA_LATEST" "$SCALA_EXT" "$SCALA_REPO" "$(dirname "$0")/update_scala.sh"
-
+echo "Done!"
