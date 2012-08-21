@@ -28,15 +28,16 @@ partition="$1"
 
 PATH="/sbin:/usr/sbin:/bin:/usr/bin:${PATH}"
 
+fstype="ext2"
 cryptsetup_bin="$(which cryptsetup)"
-mkfs_bin="$(which mkfs.ext4)"
+mkfs_bin="$(which mkfs.$fstype)"
 tune2fs_bin="$(which tune2fs)"
 if [ "$cryptsetup_bin" = "" ]; then
 	echo "could not find the program 'cryptsetup'"
 	exit 1
 fi
 if [ "$mkfs_bin" = "" ]; then
-        echo "could not find the program 'mkfs.ext4'"
+        echo "could not find the program 'mkfs.$fstype'"
         exit 1
 fi
 if [ "$tune2fs_bin" = "" ]; then
@@ -70,7 +71,7 @@ if [ $? -ne 0 ]; then
 	exit
 fi
 
-echo "creating ext4 filesystem ..."
+echo "creating $fstype filesystem ..."
 $mkfs_bin -q "/dev/mapper/$init_name"
 
 $tune2fs_bin -l "/dev/mapper/$init_name" | grep UUID
