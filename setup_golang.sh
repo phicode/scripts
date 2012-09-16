@@ -112,6 +112,10 @@ export GOPATH="$EXP_GO_PATH"
 
 PATH="\${GOBIN}:\${PATH}"
 
+# 'go get' will install packages into the first first directory of GOPATH
+# add further include paths for your other local projects like so:
+#  export GOPATH="\$GOPATH:/path/to/other/project"
+
 EOF
 fi
 
