@@ -102,3 +102,58 @@ extract() {
 	find "$absextract" -type d -exec chmod 755 '{}' ';'
 	find "$absextract" -type f -exec chmod 644 '{}' ';'
 }
+
+# returns 0 if the first character of the answer is y or Y or no answer is given
+# returns 1 if the first character of the answer is n or N
+# func parameter (optional): the string which must be printed between user interaction
+# if this parameters is not provided a default is used
+read_yes_no() {
+    p="[Y/n]: "
+    if [ $# -ne 0 ]; then
+        p=$1
+    fi
+
+    while (true); do
+        echo -n "$p"
+        read answer
+        if [ "${answer}" = "" ]; then
+            # default
+            return 0
+        fi
+        first=$(expr substr "$answer" 1 1)
+        if [ "$first" = "y" -o "$first" = "Y" ]; then
+            return 0
+        fi
+        if [ "$first" = "n" -o "$first" = "N" ]; then
+            return 1
+        fi
+    done
+}
+
+check_programs() {
+    num=$#
+    missing=""
+    num_missing=0
+
+    while [ $num -gt 0 ]; do
+        prog=$(which "$1")
+        if [ "$prog" = "" ]; then
+            if [ $num_missing -eq 0 ]; then
+                missing="$1"
+            else
+                missing="$missing $1"
+            fi
+            num_missing=$((num_missing+1))
+        fi
+        shift
+        num=$((num-1))
+    done
+    if [ $num_missing -gt 0 ]; then
+        if [ $num_missing -eq 1 ]; then
+            echo "please install the program: $missing"
+        else
+            echo "please install these programs: $missing"
+        fi
+        exit 1
+    fi
+}
