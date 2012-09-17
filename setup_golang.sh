@@ -20,6 +20,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+# A script for setting up your environment variables for a proper golang
+# development environment.
+
 # load utility methods
 . "$(dirname "$0")/libsh.sh"
 
