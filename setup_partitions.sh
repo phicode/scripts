@@ -25,39 +25,27 @@ if [ $# -ne 1 ]; then
     echo "Example: $0 /dev/sdc"
     exit 1
 fi
+drive="$1"
+
 # load utility methods
 . "$(dirname "$0")/libsh.sh"
 
 check_root
 
 PATH="/sbin:/usr/sbin:/bin:/usr/bin:${PATH}"
-parted_bin="$(which parted)"
-mkfs_ext2_bin="$(which mkfs.ext2)"
-mkfs_vfat_bin="$(which mkfs.vfat)"
-if [ "$parted_bin" = "" ]; then
-        echo "could not find the program 'parted'"
-        exit 1
-fi
-if [ "$mkfs_ext2_bin" = "" ]; then
-        echo "could not find the program 'mkfs.ext2'"
-        exit 1
-fi
-if [ "$mkfs_vfat_bin" = "" ]; then
-        echo "could not find the program 'mkfs.vfat'"
-        exit 1
-fi
-
-drive="$1"
+check_programs parted mkfs.ext2 mkfs.vfat
 
 echo "partitioning device"
-$parted_bin -s "$drive" mklabel msdos
-$parted_bin -s "$drive" mkpart  primary ext2   "0%"  "10%"
-$parted_bin -s "$drive" mkpart  primary fat32 "10%"  "20%"
-$parted_bin -s "$drive" mkpart  primary       "20%" "100%"
-$parted_bin -s "$drive" print
+parted -s "$drive" mklabel msdos
+parted -s "$drive" mkpart  primary ext2   "0%"  "40%"
+parted -s "$drive" mkpart  primary fat32 "40%"  "60%"
+parted -s "$drive" mkpart  primary       "60%" "100%"
+parted -s "$drive" print
 
 echo "formatting ${drive}1 with ext2"
-$mkfs_ext2_bin -q "${drive}1"
+mkfs.ext2 -q "${drive}1"
 
 echo "formatting ${drive}2 with fat32"
-$mkfs_vfat_bin -F32 "${drive}2"
+mkfs.vfat -F32 "${drive}2"
+
+$(dirname "$0")/init_crypto_partition.sh "${drive}3"

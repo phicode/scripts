@@ -26,26 +26,16 @@ if [ $# -ne 1 ]; then
 fi
 partition="$1"
 
+# load utility methods
+. "$(dirname "$0")/libsh.sh"
+
 PATH="/sbin:/usr/sbin:/bin:/usr/bin:${PATH}"
 
 fstype="ext2"
-cryptsetup_bin="$(which cryptsetup)"
+check_programs "mkfs.$fstype" cryptsetup tune2fs
 mkfs_bin="$(which mkfs.$fstype)"
-tune2fs_bin="$(which tune2fs)"
-if [ "$cryptsetup_bin" = "" ]; then
-	echo "could not find the program 'cryptsetup'"
-	exit 1
-fi
-if [ "$mkfs_bin" = "" ]; then
-        echo "could not find the program 'mkfs.$fstype'"
-        exit 1
-fi
-if [ "$tune2fs_bin" = "" ]; then
-        echo "could not find the program 'tune2fs'"
-        exit 1
-fi
 
-$cryptsetup_bin                  \
+cryptsetup                   \
 	--cipher aes-xts-plain64 \
 	--hash sha256            \
 	--key-size 512           \
@@ -58,13 +48,13 @@ if [ $? -ne 0 ]; then
 	exit
 fi
 
-LUKS_UUID=$($cryptsetup_bin luksUUID "$partition")
+LUKS_UUID=$(cryptsetup luksUUID "$partition")
 echo "The UUID of the newly created LUKS container is: $LUKS_UUID"
 
 init_name="init_crypto_$$"
 
-$cryptsetup_bin luksOpen "$partition" "$init_name"
-$cryptsetup_bin status "$init_name"
+cryptsetup luksOpen "$partition" "$init_name"
+cryptsetup status "$init_name"
 
 if [ $? -ne 0 ]; then
 	echo "failed to open the new luks partition, exiting"
@@ -74,12 +64,12 @@ fi
 echo "creating $fstype filesystem ..."
 $mkfs_bin -q "/dev/mapper/$init_name"
 
-$tune2fs_bin -l "/dev/mapper/$init_name" | grep UUID
+tune2fs -l "/dev/mapper/$init_name" | grep UUID
 
 sync
 sleep 2
 
-$cryptsetup_bin luksClose "$init_name"
+cryptsetup luksClose "$init_name"
 
 echo ""
 echo ""
