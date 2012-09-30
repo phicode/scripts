@@ -30,9 +30,10 @@ check_programs go
 
 # expected go home
 EXP_GO_PATH="$HOME/dev/go"
-EXP_GO_BIN="$EXP_GO_PATH/bin"
-EXP_GO_SRC="$EXP_GO_PATH/src"
-EXP_GO_PKG="$EXP_GO_PATH/pkg"
+EXP_MYGO_PATH="$HOME/dev/mygo"
+EXP_PATHS="${EXP_GO_PATH}/src ${EXP_GO_PATH}/pkg ${EXP_GO_PATH}/bin"
+EXP_PATHS="${EXP_PATHS} ${EXP_MYGO_PATH}/src ${EXP_MYGO_PATH}/pkg ${EXP_MYGO_PATH}/bin "
+
 GO_PROFILE="$HOME/.goprofile"
 PROFILE="$HOME/.profile"
 BASHRC="$HOME/.bashrc"
@@ -45,22 +46,13 @@ DO_APPEND_BASHRC=""
 DO_APPEND_PROFILE=""
 
 # create go-home and go-bin if they dont exist
-if [ ! -d "$EXP_GO_PATH" ]; then
-	DO_CREATE_DIRS="$DO_CREATE_DIRS $EXP_GO_PATH"
-	ALL_OK=0
-fi
-if [ ! -d "$EXP_GO_BIN" ]; then
-	DO_CREATE_DIRS="$DO_CREATE_DIRS $EXP_GO_BIN"
-	ALL_OK=0
-fi
-if [ ! -d "$EXP_GO_SRC" ]; then
-	DO_CREATE_DIRS="$DO_CREATE_DIRS $EXP_GO_SRC"
-	ALL_OK=0
-fi
-if [ ! -d "$EXP_GO_PKG" ]; then
-	DO_CREATE_DIRS="$DO_CREATE_DIRS $EXP_GO_PKG"
-	ALL_OK=0
-fi
+for d in $EXP_PATHS; do
+	if [ ! -d "$d" ]; then
+		DO_CREATE_DIRS="$DO_CREATE_DIRS $d"
+		ALL_OK=0
+	fi
+done
+
 if [ ! -f "$GO_PROFILE" ]; then
 	DO_CREATE_GOPROFILE=1
 	ALL_OK=0
@@ -110,8 +102,8 @@ done
 if [ $DO_CREATE_GOPROFILE -ne 0 ]; then
 	cat > "${GO_PROFILE}" << EOF
 
-export GOBIN="$EXP_GO_BIN"
-export GOPATH="$EXP_GO_PATH"
+export GOBIN="${EXP_GO_PATH}/bin:${EXP_MYGO_PATH}/bin"
+export GOPATH="${EXP_GO_PATH}:${EXP_MYGO_PATH}"
 
 PATH="\${GOBIN}:\${PATH}"
 
