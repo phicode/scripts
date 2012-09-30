@@ -32,7 +32,7 @@ check_programs go
 EXP_GO_PATH="$HOME/dev/go"
 EXP_MYGO_PATH="$HOME/dev/mygo"
 EXP_PATHS="${EXP_GO_PATH}/src ${EXP_GO_PATH}/pkg ${EXP_GO_PATH}/bin"
-EXP_PATHS="${EXP_PATHS} ${EXP_MYGO_PATH}/src ${EXP_MYGO_PATH}/pkg ${EXP_MYGO_PATH}/bin "
+EXP_PATHS="${EXP_PATHS} ${EXP_MYGO_PATH}/src ${EXP_MYGO_PATH}/pkg"
 
 GO_PROFILE="$HOME/.goprofile"
 PROFILE="$HOME/.profile"
@@ -102,7 +102,7 @@ done
 if [ $DO_CREATE_GOPROFILE -ne 0 ]; then
 	cat > "${GO_PROFILE}" << EOF
 
-export GOBIN="${EXP_GO_PATH}/bin:${EXP_MYGO_PATH}/bin"
+export GOBIN="${EXP_GO_PATH}/bin"
 export GOPATH="${EXP_GO_PATH}:${EXP_MYGO_PATH}"
 
 PATH="\${GOBIN}:\${PATH}"
