@@ -23,7 +23,7 @@
 set -e
 
 if [ $# -ne 1 ]; then
-    echo "Usage: $0 <sublime-distribution-archive>"
+    echo "Usage: $0 <sublime2-distribution-archive>"
     exit 1
 fi
 
@@ -33,28 +33,26 @@ fi
 check_root
 check_extension "$1" "\\.tar\\.bz2"
 
+# Sublime packages are named "Sublime Text 2.0.1 x64.tar.bz2" or
+# "Sublime Text 2.0.1 x64.tar.bz2" which contains spaces and the extracted
+# directory itself is named "Sublime Text 2" -- our libsh.sh doesn't like
+# these special cases
 base="/opt/sublime"
-friendly="${base}/sublime-text-2"
-localbin="/usr/local/bin"
-srcdir="${base}/current"
-executables="sublime_text sublime"
-
-# extract and rename to friendly name
 mkdir -p "${base}"
-tar -xjf "$1" -C "${base}"
-mv "${base}/Sublime Text 2" "${friendly}"
 
-# link to current
-ln -s "${friendly}" "${srcdir}"
+tmp="/tmp/update_sublime_$$"
+mkdir -p "${tmp}"
+tar xjf "${1}" -C "${tmp}"
 
-# simpler name
-ln -s "${srcdir}/sublime_text" "${srcdir}/sublime"
+version="$(basename "$1" | cut -d" " -f3)"
+dest="${base}/sublime-${version}"
+cp -r "${tmp}/Sublime Text 2" "${dest}"
+rm -rf "${tmp}"
 
-for executable in ${executables}; do
-	src="${srcdir}/${executable}"
-	link="${localbin}/${executable}"
-	mk_link "$src" "$link"
-	mk_executable "$src"
-done
+srcdir="/opt/sublime/current"
+mk_link "${dest}" "${srcdir}"
+
+localbin="/usr/local/bin"
+mk_link "${srcdir}/sublime_text" "${localbin}/sublime"
 
 echo "Done!"
