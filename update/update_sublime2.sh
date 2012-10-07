@@ -34,9 +34,9 @@ check_root
 check_extension "$1" "\\.tar\\.bz2"
 
 # Sublime packages are named "Sublime Text 2.0.1 x64.tar.bz2" or
-# "Sublime Text 2.0.1 x64.tar.bz2" which contains spaces and the extracted
+# "Sublime Text 2.0.1.tar.bz2" which contains spaces and the extracted
 # directory itself is named "Sublime Text 2" -- our libsh.sh doesn't like
-# these special cases
+# these special cases so we do it all by hand
 base="/opt/sublime"
 mkdir -p "${base}"
 
@@ -46,7 +46,18 @@ tar xjf "${1}" -C "${tmp}"
 
 version="$(basename "$1" | cut -d" " -f3)"
 dest="${base}/sublime-${version}"
+
+# abort if already present
+if [ -d "${dest}" ]; then
+	echo "already up to date!"
+	rm -rf "${tmp}"
+	exit 2
+fi
+
+# copy ensures the owner is root
 cp -r "${tmp}/Sublime Text 2" "${dest}"
+
+# cleanup
 rm -rf "${tmp}"
 
 srcdir="/opt/sublime/current"
