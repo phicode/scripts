@@ -20,6 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+set -e
+
 if [ $# -ne 1 ]; then
     echo "Usage: $0 <maven-distribution-archive>"
     exit 1
