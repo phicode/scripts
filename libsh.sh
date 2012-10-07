@@ -18,6 +18,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+set -e
+
 check_root() {
     if [ $(whoami) != "root" ]; then
         echo "Please run this program as root"
@@ -68,8 +70,8 @@ extract() {
 	extlen="$3"
     cmd="$4"
 	
-	file=$(basename "$src")
-	swname=$(expr substr $file 1 $((${#file}-$extlen)))
+	file=$(basename "${src}")
+	swname=$(expr substr "${file}" 1 $((${#file}-$extlen)))
 	srcdir=$(dirname "$1")
 	abssrcdir="$srcdir"
 
