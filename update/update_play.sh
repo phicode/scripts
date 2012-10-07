@@ -20,10 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-set -e
-
 if [ $# -ne 1 ]; then
-    echo "Usage: $0 <groovy-distribution-archive>"
+    echo "Usage: $0 <play-distribution-archive>"
     exit 1
 fi
 
@@ -33,19 +31,12 @@ fi
 check_root
 check_extension "$1" "\\.zip"
 
-# .zip => 4 ... and we need to remove "-binary" from the zip file's name
-# otherwise libsh.sh won't like us
-tmp="/tmp/update_groovy_$$"
-mkdir -p "${tmp}"
-name="$(basename "${1}" | sed "s/-binary//")"
-dist="${tmp}/${name}"
-cp "${1}" "${dist}"
-extract "${dist}" "/opt/groovy" 4 "unzip"
-rm -rf "${tmp}"
+# .zip => 4
+extract "$1" "/opt/play" 4 "unzip"
 
 localbin="/usr/local/bin"
-srcdir="/opt/groovy/current/bin"
-executables="grape groovy groovyConsole groovydoc groovysh java2groovy startGroovy"
+srcdir="/opt/play/current"
+executables="play"
 
 for executable in ${executables}; do
 	src="${srcdir}/${executable}"
