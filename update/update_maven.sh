@@ -31,7 +31,7 @@ fi
 check_root
 check_extension "$1" "\\-bin\\.tar\\.gz"
 
-# -bin.tar.gz => 7
+# -bin.tar.gz => 11
 extract "$1" "/opt/maven" 11 "tar xzf"
 
 localbin="/usr/local/bin"
