@@ -37,5 +37,6 @@ while [ ${#packages} -ne 1 ]; do # there is a space in there :D
 done
 
 aptitude autoclean
+aptitude clean
 
 echo "done"
