@@ -90,6 +90,10 @@ extract() {
     cd "$dstdir"
 
 	${cmd} "$absfile"
+    if [ $? -ne 0 ]; then
+        echo "extraction seems to have gone wrong"
+        exit 1
+    fi
 
 	if [ ! -d "$absextract" ]; then
 	    echo "Cant find folder $absextract"
