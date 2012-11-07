@@ -22,6 +22,7 @@
 
 MAVEN_LATEST="apache-maven-3.0.4"
 SCALA_LATEST="scala-2.9.2"
+GRADLE_LATEST="gradle-1.2"
 
 # load utility methods
 . "$(dirname "$0")/../libsh.sh"
@@ -38,6 +39,11 @@ SCALA_SCRIPT="$(dirname "$0")/update_scala.sh"
 SCALA_REPO="http://www.scala-lang.org/downloads/distrib/files"
 SCALA_EXT=".tgz"
 
+GRADLE_CHECK_BIN="/opt/gradle/${GRADLE_LATEST}/bin/gradle"
+GRADLE_SCRIPT="$(dirname "$0")/update_gradle.sh"
+GRADLE_REPO="http://services.gradle.org/distributions"
+GRADLE_EXT="-bin.zip"
+
 download_and_install() {
 	name="$1"
 	check_bin="$2"
@@ -51,11 +57,13 @@ download_and_install() {
 		STORE_FILE="/tmp/${FILE}"
 		DL_LOG="${STORE_FILE}.download-log"
 
-		if [ ! -e $STORE_FILE ]; then
+		if [ ! -s $STORE_FILE ]; then
 			echo "downloading $name release: $latest"
 			wget -o "${DL_LOG}" -O "$STORE_FILE" "$REPO_FILE"
 			if [ $? -ne 0 ]; then
 				echo "download failed, see: $DL_LOG"
+				echo "maybe you are located behind a proxy, in which case you can use:"
+				echo "env http_proxy=\"http://proxy-url:proxy-port/\" $0"
 				return
 			fi
 		fi
@@ -67,6 +75,7 @@ download_and_install() {
 }
 
 
-download_and_install "maven" "$MAVEN_CHECK_BIN" "$MAVEN_LATEST" "$MAVEN_EXT" "$MAVEN_REPO" "$MAVEN_SCRIPT"
-download_and_install "scala" "$SCALA_CHECK_BIN" "$SCALA_LATEST" "$SCALA_EXT" "$SCALA_REPO" "$SCALA_SCRIPT"
+download_and_install "maven"  "$MAVEN_CHECK_BIN"  "$MAVEN_LATEST"  "$MAVEN_EXT"  "$MAVEN_REPO"  "$MAVEN_SCRIPT"
+download_and_install "scala"  "$SCALA_CHECK_BIN"  "$SCALA_LATEST"  "$SCALA_EXT"  "$SCALA_REPO"  "$SCALA_SCRIPT"
+download_and_install "gradle" "$GRADLE_CHECK_BIN" "$GRADLE_LATEST" "$GRADLE_EXT" "$GRADLE_REPO" "$GRADLE_SCRIPT"
 
