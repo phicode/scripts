@@ -1,5 +1,14 @@
 #!/bin/sh
 
+### BEGIN INIT INFO
+# Provides:          firewall
+# Required-Start:    $local_fs $remote_fs $network
+# Required-Stop:     $local_fs $remote_fs $network
+# Default-Start:     S
+# Default-Stop:      0 6
+# Short-Description: workstation/server iptables firewall
+### END INIT INFO
+
 [ $(id -u) -eq 0 ] || (echo "must be run as root" ; exit 1)
 
 [ -x "$(which iptables)" ] || (echo "iptables not found or executable" ; exit 1)
@@ -87,15 +96,46 @@ ipt_simple_out_rule () {
 	return 0
 }
 
+status () {
+	echo "==============MANGLE===================="
+	iptables -t mangle -L -nv
+	echo "==============FILTER ==================="
+	iptables -t filter -L -nv
+	echo "==============NAT======================="
+	iptables -t nat -L -nv
+	echo "========================================"
+}
 
 echo "==============START====================="
 start
-echo "========================================"
-iptables -L -nv
+echo "==============STARTED==================="
+status
 echo "==============STOP======================"
 stop
+echo "==============STOPPED==================="
+status
 echo "========================================"
-iptables -L -nv
-echo "========================================"
+
+exit 0
+
+case "$1" in 
+	start)
+		start
+		;;
+	stop)
+		stop
+		;;
+	status)
+		status
+		;;
+	restart|reload|force-reload)
+		stop
+		start
+		;;
+	*)
+		echo "usage: $0 (start|stop|restart)"
+		exit 1
+		;;
+esac
 
 exit 0
