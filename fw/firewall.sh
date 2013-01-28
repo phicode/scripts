@@ -15,6 +15,7 @@
 
 # TODO: config file
 # TODO: IPv6
+# TODO: make sure that localhost-net is only reachable through dev lo
 
 VERBOSE=y
 
@@ -25,7 +26,9 @@ start () {
 	ipt_policy filter FORWARD DROP
 	ipt_policy filter OUTPUT  ACCEPT
 
-	ipt_allow_lo
+	# allow localhost
+	ipt_rule filter INPUT  all ACCEPT -i lo
+	ipt_rule filter OUTPUT all ACCEPT -o lo
 
 	ipt_state_rule filter INPUT tcp  ACCEPT "ESTABLISHED,RELATED"
 	ipt_state_rule filter INPUT udp  ACCEPT "ESTABLISHED,RELATED"
@@ -39,7 +42,8 @@ start () {
 	# statefull services
 	ipt_allow_port tcp 22
 
-	ipt_allow_ping
+	# allow ping
+	ipt_rule filter INPUT icmp ACCEPT -m icmp --icmp-type echo-request
 
 	# keep some counters about which types of packets we are dropping 
 	ipt_rule filter INPUT all DROP -m pkttype --pkt-type broadcast
@@ -103,15 +107,6 @@ ipt_flush () {
 		ipt -t $tbl --delete-chain
 		ipt -t $tbl --zero
 	done
-}
-
-ipt_allow_lo () {
-	ipt_rule filter INPUT  all ACCEPT -i lo
-	ipt_rule filter OUTPUT all ACCEPT -o lo
-}
-
-ipt_allow_ping () {
-	ipt_rule filter INPUT icmp ACCEPT -m icmp --icmp-type echo-request
 }
 
 # syntax: ipt_rule <table> <chain> <protocol> <target> [extra-stuff]
