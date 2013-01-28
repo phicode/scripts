@@ -16,6 +16,8 @@
 # TODO: config file
 # TODO: IPv6
 
+VERBOSE=y
+
 start () {
 	set_net_options
 
@@ -83,18 +85,23 @@ set_net_options () {
 	echo 0 > /proc/sys/net/ipv6/conf/all/accept_source_route
 }
 
+ipt () {
+	iptables "$@"
+	[ $VERBOSE = "y" ] && echo iptables "$@"
+}
+
 # syntax: ipt_policy <table> <chain> <target>
 ipt_policy () {
 	[ $# -ne 3 ] && "ipt_policy error: $@" && return 1
-	iptables -t $1 -P $2 $3
+	ipt -t $1 -P $2 $3
 	return 0
 }
 
 ipt_flush () {
 	for tbl in filter mangle nat raw; do
-		iptables -t $tbl --flush
-		iptables -t $tbl --delete-chain
-		iptables -t $tbl --zero
+		ipt -t $tbl --flush
+		ipt -t $tbl --delete-chain
+		ipt -t $tbl --zero
 	done
 }
 
@@ -115,8 +122,7 @@ ipt_rule () {
 	local p=$3
 	local j=$4
 	shift 4
-	iptables -t $t -A $c -p $p -j $j "$@"
-	echo iptables -t $t -A $c -p $p -j $j "$@"
+	ipt -t $t -A $c -p $p -j $j "$@"
 	return 0
 }
 
@@ -144,20 +150,20 @@ ipt_allow_port () {
 # syntax: ipt_notrack_service <protocol> <port>
 ipt_notrack_port () {
 	[ $# -ne 2 ] && "ipt_notrack_port error: $@" && return 1
-	iptables -t raw -A PREROUTING -p $1 --dport $2 -j CT --notrack
-	iptables -t raw -A OUTPUT     -p $1 --sport $2 -j CT --notrack
+	ipt -t raw -A PREROUTING -p $1 --dport $2 -j CT --notrack
+	ipt -t raw -A OUTPUT     -p $1 --sport $2 -j CT --notrack
 	return 0
 }
 
 status () {
 	echo "==============NAT======================="
-	iptables -t nat -L -nv
+	ipt -t nat -L -nv
 	echo "==============RAW======================="
-	iptables -t raw -L -nv
+	ipt -t raw -L -nv
 	echo "==============MANGLE===================="
-	iptables -t mangle -L -nv
+	ipt -t mangle -L -nv
 	echo "==============FILTER ==================="
-	iptables -t filter -L -nv
+	ipt -t filter -L -nv
 	echo "========================================"
 }
 
