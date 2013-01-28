@@ -4,7 +4,7 @@
 # Provides:          firewall
 # Required-Start:    $network $local_fs
 # Required-Stop:     $network $local_fs
-# Default-Start:     S
+# Default-Start:     2 3 4 5
 # Default-Stop:      0 6
 # Short-Description: workstation/server iptables firewall
 ### END INIT INFO
