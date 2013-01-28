@@ -23,8 +23,6 @@ start () {
 	set_net_options
 
 	ipt_allow_lo
-	
-	ipt_notrack_service udp 123
 
 	ipt_state_rule filter INPUT tcp  ACCEPT "ESTABLISHED,RELATED"
 	ipt_state_rule filter INPUT udp  ACCEPT "ESTABLISHED,RELATED"
@@ -32,6 +30,10 @@ start () {
 	ipt_state_rule filter INPUT all  ACCEPT "UNTRACKED"
 	ipt_state_rule filter INPUT all  DROP   "INVALID"
 
+	# stateless services
+	ipt_notrack_port udp 123
+	
+	# statefull services
 	ipt_allow_port tcp 22
 
 	ipt_allow_ping
@@ -139,8 +141,8 @@ ipt_allow_port () {
 }
 
 # syntax: ipt_notrack_service <protocol> <port>
-ipt_notrack_service () {
-	[ $# -ne 2 ] && "ipt_notrack_service error: $@" && return 1
+ipt_notrack_port () {
+	[ $# -ne 2 ] && "ipt_notrack_port error: $@" && return 1
 	iptables -t raw -A PREROUTING -p $1 --dport $2 -j CT --notrack
 	iptables -t raw -A OUTPUT     -p $1 --sport $2 -j CT --notrack
 	return 0
