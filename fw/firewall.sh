@@ -14,15 +14,28 @@
 [ -x "$(which iptables)" ] || (echo "iptables not found or executable" ; exit 1)
 
 start () {
-	ipt_policy filter INPUT   ACCEPT
+	ipt_policy filter INPUT   DROP
 	ipt_policy filter FORWARD DROP
 	ipt_policy filter OUTPUT  ACCEPT
 
 	set_net_options
 
 	ipt_lo_accept
+	
+	ipt_notrack_service udp 123
 
-	ipt_state_rule filter INPUT all all ACCEPT "ESTABLISHED,RELATED"
+	# allow packets for which we do not want to keep connection-tracking information
+	ipt_state_rule filter INPUT  tcp  ACCEPT "ESTABLISHED,RELATED"
+	ipt_state_rule filter INPUT  udp  ACCEPT "ESTABLISHED,RELATED"
+	ipt_state_rule filter INPUT  icmp ACCEPT "ESTABLISHED,RELATED"
+	ipt_state_rule filter INPUT  all  ACCEPT "UNTRACKED"
+	ipt_state_rule filter INPUT  all  DROP   "INVALID"
+	ipt_state_rule filter OUTPUT all  ACCEPT "ESTABLISHED,NEW"
+
+	ipt_allow_port tcp 22
+
+	# reject the rest
+	#ipt_rule filter INPUT all REJECT
 }
 
 stop () {
@@ -66,57 +79,74 @@ ipt_policy () {
 
 # TODO: chains as parameters
 ipt_flush () {
-	iptables --flush
-	iptables --delete-chain
-	iptables --zero
+	for tbl in filter mangle nat raw; do
+		iptables -t $tbl --flush
+		iptables -t $tbl --delete-chain
+	done
+	iptables -t filter --zero
 }
 
 ipt_lo_accept () {
-	ipt_simple_in_rule  filter INPUT  lo all ACCEPT
-	ipt_simple_out_rule filter OUTPUT lo all ACCEPT
+	ipt_rule filter INPUT  all ACCEPT -i lo
+	ipt_rule filter OUTPUT all ACCEPT -o lo
 }
 
-# syntax: ipt_simple_rule <table> <chain> <interface> <protocol> <target>
-ipt_simple_in_rule () {
-	(
-		[ $# -eq 5 ] && \
-		iptables -t $1 -A $2 -i $3 -p $4 -j $5
-	) \
-	|| (echo "ipt_simple_in_rule error: $@" ; return 1)
+# syntax: ipt_rule <table> <chain> <protocol> <target> [extra-stuff]
+ipt_rule () {
+	[ $# -lt 4 ] && "ipt_rule error: $@" && return 1
+	local t=$1
+	local c=$2
+	local p=$3
+	local j=$4
+	shift 4
+	iptables -t $t -A $c -p $p -j $j "$@"
+	echo iptables -t $t -A $c -p $p -j $j "$@"
 	return 0
 }
 
-# syntax: ipt_simple_rule <table> <chain> <interface> <protocol> <target>
-ipt_simple_out_rule () {
-	(
-		[ $# -eq 5 ] && \
-		iptables -t $1 -A $2 -o $3 -p $4 -j $5
+# syntax: ipt_state_rule <table> <chain> <protocol> <target> <states> [extra-stuff]
+ipt_state_rule () {
+	[ $# -lt 5 ] && "ipt_state_rule error: $@" && return 1
+	local t=$1
+	local c=$2
+	local p=$3
+	local j=$4
+	local s=$5
+	shift 5
+	ipt_rule $t $c $p $j -m conntrack --ctstate $s "$@"
+	return 0
+}
+
+# syntax: ipt_allow_port <protocol> <port>
+ipt_allow_port () {
+	[ $# -ne 2 ] && "ipt_allow_port error: $@" && return 1
+	ipt_state_rule filter INPUT  $1 ACCEPT NEW --dport $2
+	ipt_rule       filter OUTPUT $1 ACCEPT     --sport $2
+	return 0
+}
+
+# syntax: ipt_notrack_service <protocol> <port>
+ipt_notrack_service () {
+    (
+		[ $# -eq 2 ] && \
+		iptables -t raw -A PREROUTING -p $1 --dport $2 -j CT --notrack && \
+		iptables -t raw -A OUTPUT     -p $1 --sport $2 -j CT --notrack
 	) \
-	|| (echo "ipt_simple_out_rule error: $@" ; return 1)
+	|| (echo "ipt_notrack_service error: $@" ; return 1)
 	return 0
 }
 
 status () {
+	echo "==============NAT======================="
+	iptables -t nat -L -nv
+	echo "==============RAW======================="
+	iptables -t raw -L -nv
 	echo "==============MANGLE===================="
 	iptables -t mangle -L -nv
 	echo "==============FILTER ==================="
 	iptables -t filter -L -nv
-	echo "==============NAT======================="
-	iptables -t nat -L -nv
 	echo "========================================"
 }
-
-echo "==============START====================="
-start
-echo "==============STARTED==================="
-status
-echo "==============STOP======================"
-stop
-echo "==============STOPPED==================="
-status
-echo "========================================"
-
-exit 0
 
 case "$1" in 
 	start)
