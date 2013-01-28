@@ -140,12 +140,9 @@ ipt_allow_port () {
 
 # syntax: ipt_notrack_service <protocol> <port>
 ipt_notrack_service () {
-    (
-		[ $# -eq 2 ] && \
-		iptables -t raw -A PREROUTING -p $1 --dport $2 -j CT --notrack && \
-		iptables -t raw -A OUTPUT     -p $1 --sport $2 -j CT --notrack
-	) \
-	|| (echo "ipt_notrack_service error: $@" ; return 1)
+	[ $# -ne 2 ] && "ipt_notrack_service error: $@" && return 1
+	iptables -t raw -A PREROUTING -p $1 --dport $2 -j CT --notrack
+	iptables -t raw -A OUTPUT     -p $1 --sport $2 -j CT --notrack
 	return 0
 }
 
