@@ -13,6 +13,8 @@
 
 [ -x "$(which iptables)" ] || (echo "iptables not found or executable" ; exit 1)
 
+# TODO: config file
+
 start () {
 	ipt_policy filter INPUT   DROP
 	ipt_policy filter FORWARD DROP
@@ -20,22 +22,27 @@ start () {
 
 	set_net_options
 
-	ipt_lo_accept
+	ipt_allow_lo
 	
 	ipt_notrack_service udp 123
 
-	# allow packets for which we do not want to keep connection-tracking information
-	ipt_state_rule filter INPUT  tcp  ACCEPT "ESTABLISHED,RELATED"
-	ipt_state_rule filter INPUT  udp  ACCEPT "ESTABLISHED,RELATED"
-	ipt_state_rule filter INPUT  icmp ACCEPT "ESTABLISHED,RELATED"
-	ipt_state_rule filter INPUT  all  ACCEPT "UNTRACKED"
-	ipt_state_rule filter INPUT  all  DROP   "INVALID"
-	ipt_state_rule filter OUTPUT all  ACCEPT "ESTABLISHED,NEW"
+	ipt_state_rule filter INPUT tcp  ACCEPT "ESTABLISHED,RELATED"
+	ipt_state_rule filter INPUT udp  ACCEPT "ESTABLISHED,RELATED"
+	ipt_state_rule filter INPUT icmp ACCEPT "ESTABLISHED,RELATED"
+	ipt_state_rule filter INPUT all  ACCEPT "UNTRACKED"
+	ipt_state_rule filter INPUT all  DROP   "INVALID"
 
 	ipt_allow_port tcp 22
 
-	# reject the rest
-	#ipt_rule filter INPUT all REJECT
+	ipt_allow_ping
+
+	ipt_state_rule filter OUTPUT tcp  ACCEPT "ESTABLISHED,NEW"
+	ipt_state_rule filter OUTPUT udp  ACCEPT "ESTABLISHED,NEW"
+	ipt_state_rule filter OUTPUT icmp ACCEPT "ESTABLISHED,NEW"
+
+	# keep some counters about which types of packets we are dropping 
+	ipt_rule filter INPUT all DROP -m pkttype --pkt-type broadcast
+	ipt_rule filter INPUT all DROP -m pkttype --pkt-type multicast
 }
 
 stop () {
@@ -74,21 +81,26 @@ set_net_options () {
 
 # syntax: ipt_policy <table> <chain> <target>
 ipt_policy () {
+	[ $# -ne 3 ] && "ipt_policy error: $@" && return 1
 	iptables -t $1 -P $2 $3
+	return 0
 }
 
-# TODO: chains as parameters
 ipt_flush () {
 	for tbl in filter mangle nat raw; do
 		iptables -t $tbl --flush
 		iptables -t $tbl --delete-chain
+		iptables -t $tbl --zero
 	done
-	iptables -t filter --zero
 }
 
-ipt_lo_accept () {
+ipt_allow_lo () {
 	ipt_rule filter INPUT  all ACCEPT -i lo
 	ipt_rule filter OUTPUT all ACCEPT -o lo
+}
+
+ipt_allow_ping () {
+	ipt_rule filter INPUT icmp ACCEPT -m icmp --icmp-type echo-request
 }
 
 # syntax: ipt_rule <table> <chain> <protocol> <target> [extra-stuff]
