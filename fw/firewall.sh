@@ -2,8 +2,8 @@
 
 ### BEGIN INIT INFO
 # Provides:          firewall
-# Required-Start:    $local_fs $remote_fs $network
-# Required-Stop:     $local_fs $remote_fs $network
+# Required-Start:    $network $local_fs
+# Required-Stop:     $network $local_fs
 # Default-Start:     S
 # Default-Stop:      0 6
 # Short-Description: workstation/server iptables firewall
