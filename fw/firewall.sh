@@ -16,11 +16,11 @@
 # TODO: config file
 
 start () {
+	set_net_options
+
 	ipt_policy filter INPUT   DROP
 	ipt_policy filter FORWARD DROP
 	ipt_policy filter OUTPUT  ACCEPT
-
-	set_net_options
 
 	ipt_allow_lo
 
