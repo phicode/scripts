@@ -36,13 +36,14 @@ start () {
 
 	ipt_allow_ping
 
-	ipt_state_rule filter OUTPUT tcp  ACCEPT "ESTABLISHED,NEW"
-	ipt_state_rule filter OUTPUT udp  ACCEPT "ESTABLISHED,NEW"
-	ipt_state_rule filter OUTPUT icmp ACCEPT "ESTABLISHED,NEW"
-
 	# keep some counters about which types of packets we are dropping 
 	ipt_rule filter INPUT all DROP -m pkttype --pkt-type broadcast
 	ipt_rule filter INPUT all DROP -m pkttype --pkt-type multicast
+
+	# track outgoing connections by protocol
+	ipt_state_rule filter OUTPUT tcp  ACCEPT "ESTABLISHED,NEW"
+	ipt_state_rule filter OUTPUT udp  ACCEPT "ESTABLISHED,NEW"
+	ipt_state_rule filter OUTPUT icmp ACCEPT "ESTABLISHED,NEW"
 }
 
 stop () {
