@@ -14,6 +14,7 @@
 [ -x "$(which iptables)" ] || (echo "iptables not found or executable" ; exit 1)
 
 # TODO: config file
+# TODO: IPv6
 
 start () {
 	set_net_options
