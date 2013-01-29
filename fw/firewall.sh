@@ -35,10 +35,10 @@ start () {
 	ipt_rule filter INPUT  all ACCEPT -i lo
 	ipt_rule filter OUTPUT all ACCEPT -o lo
 
+	ipt_state_rule filter INPUT all  ACCEPT "UNTRACKED"
 	ipt_state_rule filter INPUT tcp  ACCEPT "ESTABLISHED,RELATED"
 	ipt_state_rule filter INPUT udp  ACCEPT "ESTABLISHED,RELATED"
 	ipt_state_rule filter INPUT icmp ACCEPT "ESTABLISHED,RELATED"
-	ipt_state_rule filter INPUT all  ACCEPT "UNTRACKED"
 	ipt_state_rule filter INPUT all  DROP   "INVALID"
 
 	# stateless services
