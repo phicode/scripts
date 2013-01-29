@@ -35,11 +35,12 @@ start () {
 	ipt_rule filter INPUT  all ACCEPT -i lo
 	ipt_rule filter OUTPUT all ACCEPT -o lo
 
-	ipt_state_rule filter INPUT all  ACCEPT "UNTRACKED"
-	ipt_state_rule filter INPUT tcp  ACCEPT "ESTABLISHED,RELATED"
-	ipt_state_rule filter INPUT udp  ACCEPT "ESTABLISHED,RELATED"
-	ipt_state_rule filter INPUT icmp ACCEPT "ESTABLISHED,RELATED"
-	ipt_state_rule filter INPUT all  DROP   "INVALID"
+	ipt_state_rule filter INPUT all    ACCEPT "UNTRACKED"
+	ipt_state_rule filter INPUT tcp    ACCEPT "ESTABLISHED,RELATED"
+	ipt_state_rule filter INPUT udp    ACCEPT "ESTABLISHED,RELATED"
+	ipt_state_rule filter INPUT icmp   ACCEPT "ESTABLISHED,RELATED"
+	ipt_state_rule filter INPUT icmpv6 ACCEPT "ESTABLISHED,RELATED"
+	ipt_state_rule filter INPUT all    DROP   "INVALID"
 
 	# stateless services
 	ipt_notrack_port udp 123
@@ -47,18 +48,21 @@ start () {
 	# statefull services
 	ipt_allow_port tcp 22
 
-	# allow ping
-	ipt4 -t filter -A INPUT -p icmp   -j ACCEPT -m icmp   --icmp-type   echo-request
-	ipt6 -t filter -A INPUT -p icmpv6 -j ACCEPT -m icmpv6 --icmpv6-type echo-request
+	# allow icmp ping
+	ipt4 -t filter -A INPUT -p icmp   -j ACCEPT -m icmp  --icmp-type   echo-request
+	# allow all icmpv6 except redirect
+	ipt6 -t filter -A INPUT -p icmpv6 -j DROP   -m icmp6 --icmpv6-type redirect
+	ipt6 -t filter -A INPUT -p icmpv6 -j ACCEPT
 
 	# keep some counters about which types of packets we are dropping 
 	ipt_rule filter INPUT all DROP -m pkttype --pkt-type broadcast
 	ipt_rule filter INPUT all DROP -m pkttype --pkt-type multicast
 
 	# track outgoing connections by protocol
-	ipt_state_rule filter OUTPUT tcp  ACCEPT "ESTABLISHED,NEW"
-	ipt_state_rule filter OUTPUT udp  ACCEPT "ESTABLISHED,NEW"
-	ipt_state_rule filter OUTPUT icmp ACCEPT "ESTABLISHED,NEW"
+	ipt_rule filter OUTPUT tcp    ACCEPT
+	ipt_rule filter OUTPUT udp    ACCEPT
+	ipt_rule filter OUTPUT icmp   ACCEPT
+	ipt_rule filter OUTPUT icmpv6 ACCEPT
 }
 
 stop () {
