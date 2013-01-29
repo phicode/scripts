@@ -35,12 +35,12 @@ start () {
 	ipt_rule filter INPUT  all ACCEPT -i lo
 	ipt_rule filter OUTPUT all ACCEPT -o lo
 
-	ipt_state_rule filter INPUT all    ACCEPT "UNTRACKED"
-	ipt_state_rule filter INPUT tcp    ACCEPT "ESTABLISHED,RELATED"
-	ipt_state_rule filter INPUT udp    ACCEPT "ESTABLISHED,RELATED"
-	ipt_state_rule filter INPUT icmp   ACCEPT "ESTABLISHED,RELATED"
-	ipt_state_rule filter INPUT icmpv6 ACCEPT "ESTABLISHED,RELATED"
-	ipt_state_rule filter INPUT all    DROP   "INVALID"
+	ipt_state_rule  filter INPUT all    ACCEPT "UNTRACKED"
+	ipt_state_rule  filter INPUT tcp    ACCEPT "ESTABLISHED,RELATED"
+	ipt_state_rule  filter INPUT udp    ACCEPT "ESTABLISHED,RELATED"
+	ipt4_state_rule filter INPUT icmp   ACCEPT "ESTABLISHED,RELATED"
+	ipt6_state_rule filter INPUT icmpv6 ACCEPT "ESTABLISHED,RELATED"
+	ipt_state_rule  filter INPUT all    DROP   "INVALID"
 
 	# stateless services
 	ipt_notrack_port udp 123
@@ -48,21 +48,20 @@ start () {
 	# statefull services
 	ipt_allow_port tcp 22
 
-	# allow icmp ping
-	ipt4 -t filter -A INPUT -p icmp   -j ACCEPT -m icmp  --icmp-type   echo-request
-	# allow all icmpv6 except redirect
-	ipt6 -t filter -A INPUT -p icmpv6 -j DROP   -m icmp6 --icmpv6-type redirect
-	ipt6 -t filter -A INPUT -p icmpv6 -j ACCEPT
+	# allow icmp4 ping and all icmp6 except redirect
+	ipt4_rule filter INPUT icmp   ACCEPT -m icmp  --icmp-type   echo-request
+	ipt6_rule filter INPUT icmpv6 DROP   -m icmp6 --icmpv6-type redirect
+	ipt6_rule filter INPUT icmpv6 ACCEPT
 
 	# keep some counters about which types of packets we are dropping 
 	ipt_rule filter INPUT all DROP -m pkttype --pkt-type broadcast
 	ipt_rule filter INPUT all DROP -m pkttype --pkt-type multicast
 
 	# track outgoing connections by protocol
-	ipt_rule filter OUTPUT tcp    ACCEPT
-	ipt_rule filter OUTPUT udp    ACCEPT
-	ipt_rule filter OUTPUT icmp   ACCEPT
-	ipt_rule filter OUTPUT icmpv6 ACCEPT
+	ipt_rule  filter OUTPUT tcp    ACCEPT
+	ipt_rule  filter OUTPUT udp    ACCEPT
+	ipt4_rule filter OUTPUT icmp   ACCEPT
+	ipt6_rule filter OUTPUT icmpv6 ACCEPT
 }
 
 stop () {
@@ -107,10 +106,9 @@ ipt4 () {
 
 # iptables rule for ipv6
 ipt6 () {
-	[ $IPV6 = "y" ] && (
-		[ $VERBOSE = "y" ] && echo ip6tables "$@"
-		ip6tables "$@"
-	)
+	[ $IPV6 = "y" ] || return 0
+	[ $VERBOSE = "y" ] && echo ip6tables "$@"
+	ip6tables "$@"
 }
 
 # iptables rule for ipv4 and ipv6
@@ -138,28 +136,53 @@ ipt_flush () {
 	ipt4 -t nat --zero
 }
 
-# syntax: ipt_rule <table> <chain> <protocol> <target> [extra-stuff]
+# syntax: ipt4_rule <table> <chain> <protocol> <target> [extra-params]
+ipt4_rule () {
+	ipt_rule 4 "$@"
+}
+
+# syntax: ipt6_rule <table> <chain> <protocol> <target> [extra-params]
+ipt6_rule () {
+	ipt_rule 6 "$@"
+}
+
+# syntax: ipt4_state_rule <table> <chain> <protocol> <target> <states> [extra-params]
+ipt4_state_rule () {
+	ipt_state_rule 4 "$@"
+}
+
+# syntax: ipt6_state_rule <table> <chain> <protocol> <target> <states> [extra-params]
+ipt6_state_rule () {
+	ipt_state_rule 6 "$@"
+}
+
+# syntax: ipt_rule [4|6] <table> <chain> <protocol> <target> [extra-params]
 ipt_rule () {
-	[ $# -lt 4 ] && "ipt_rule error: $@" && return 1
-	local t=$1
-	local c=$2
-	local p=$3
-	local j=$4
+	local cmd=ipt
+	[ $# -lt 4 ] && echo "ipt_rule error: $@" && return 1
+	if [ "$1" = "4" -o "$1" = "6" ]; then
+		[ $# -lt 5 ] && echo "ipt_rule error: $@" && return 1
+		cmd=ipt${1}
+		shift
+	fi
+	local t=$1 ; local c=$2 ; local p=$3 ; local j=$4
 	shift 4
-	ipt -t $t -A $c -p $p -j $j "$@"
+	$cmd -t $t -A $c -p $p -j $j "$@"
 	return 0
 }
 
-# syntax: ipt_state_rule <table> <chain> <protocol> <target> <states> [extra-stuff]
+# syntax: ipt_state_rule [4|6] <table> <chain> <protocol> <target> <states> [extra-params]
 ipt_state_rule () {
-	[ $# -lt 5 ] && "ipt_state_rule error: $@" && return 1
-	local t=$1
-	local c=$2
-	local p=$3
-	local j=$4
-	local s=$5
+	local proto=""
+	[ $# -lt 5 ] && echo "ipt_state_rule error: $@" && return 1
+	if [ "$1" = "4" -o "$1" = "6" ]; then
+		[ $# -lt 6 ] && echo "ipt_state_rule error: $@" && return 1
+		proto=$1
+		shift
+	fi
+	local t=$1 ; local c=$2 ; local p=$3 ; local j=$4 ; local s=$5
 	shift 5
-	ipt_rule $t $c $p $j -m conntrack --ctstate $s "$@"
+	ipt_rule $proto $t $c $p $j -m conntrack --ctstate $s "$@"
 	return 0
 }
 
