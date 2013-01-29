@@ -15,7 +15,7 @@
 IPV6=y
 [ -x "$(which ip6tables)" ] || (echo "no ip6tables found" ; IPV6=n)
 
-# TODO: config file
+# TODO: config file & install command
 # TODO: custom IPv6 rules
 # TODO: make sure that localhost-net is only reachable through dev lo
 
