@@ -13,6 +13,9 @@
 
 [ -x "$(which iptables)" ] || (echo "iptables not found or executable" ; exit 1)
 
+CONF_FILE=/etc/firewall.conf
+[ -f $CONF_FILE ] && . $CONF_FILE
+
 start () {
 	ipt_policy filter INPUT   DROP
 	ipt_policy filter FORWARD DROP
