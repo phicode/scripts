@@ -12,9 +12,11 @@
 [ $(id -u) -eq 0 ] || (echo "must be run as root" ; exit 1)
 
 [ -x "$(which iptables)" ] || (echo "iptables not found or executable" ; exit 1)
+IPV6=y
+[ -x "$(which ip6tables)" ] || (echo "no ip6tables found" ; IPV6=n)
 
 # TODO: config file
-# TODO: IPv6
+# TODO: custom IPv6 rules
 # TODO: make sure that localhost-net is only reachable through dev lo
 
 VERBOSE=y
@@ -90,8 +92,13 @@ set_net_options () {
 }
 
 ipt () {
-	iptables "$@"
 	[ $VERBOSE = "y" ] && echo iptables "$@"
+	iptables "$@"
+
+	[ $IPV6 = "y" ] && (
+		[ $VERBOSE = "y" ] && echo ip6tables "$@"
+		ip6tables "$@"
+	)
 }
 
 # syntax: ipt_policy <table> <chain> <target>
