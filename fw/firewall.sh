@@ -48,8 +48,8 @@ start () {
 	ipt_allow_port tcp 22
 
 	# allow ping
-	ipt4_rule filter INPUT icmp ACCEPT -m icmp   --icmp-type   echo-request
-	ipt6_rule filter INPUT icmp ACCEPT -m icmpv6 --icmpv6-type echo-request
+	ipt4 -t filter -A INPUT -p icmp   -j ACCEPT -m icmp   --icmp-type   echo-request
+	ipt6 -t filter -A INPUT -p icmpv6 -j ACCEPT -m icmpv6 --icmpv6-type echo-request
 
 	# keep some counters about which types of packets we are dropping 
 	ipt_rule filter INPUT all DROP -m pkttype --pkt-type broadcast
@@ -108,6 +108,7 @@ ipt6 () {
 		ip6tables "$@"
 	)
 }
+
 # iptables rule for ipv4 and ipv6
 ipt () {
 	ipt4 "$@"
@@ -176,7 +177,7 @@ ipt_notrack_port () {
 
 status () {
 	echo "==============NAT======================="
-	ipt -t nat -L -nv
+	ipt4 -t nat -L -nv
 	echo "==============RAW======================="
 	ipt -t raw -L -nv
 	echo "==============MANGLE===================="
