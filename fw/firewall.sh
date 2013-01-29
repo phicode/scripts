@@ -45,7 +45,8 @@ start () {
 	ipt_allow_port tcp 22
 
 	# allow ping
-	ipt_rule filter INPUT icmp ACCEPT -m icmp --icmp-type echo-request
+	ipt4_rule filter INPUT icmp ACCEPT -m icmp   --icmp-type   echo-request
+	ipt6_rule filter INPUT icmp ACCEPT -m icmpv6 --icmpv6-type echo-request
 
 	# keep some counters about which types of packets we are dropping 
 	ipt_rule filter INPUT all DROP -m pkttype --pkt-type broadcast
@@ -91,14 +92,23 @@ set_net_options () {
 	echo 0 > /proc/sys/net/ipv6/conf/all/accept_source_route
 }
 
-ipt () {
+# iptables rule for ipv4
+ipt4 () {
 	[ $VERBOSE = "y" ] && echo iptables "$@"
 	iptables "$@"
+}
 
+# iptables rule for ipv6
+ipt6 () {
 	[ $IPV6 = "y" ] && (
 		[ $VERBOSE = "y" ] && echo ip6tables "$@"
 		ip6tables "$@"
 	)
+}
+# iptables rule for ipv4 and ipv6
+ipt () {
+	ipt4 "$@"
+	ipt6 "$@"
 }
 
 # syntax: ipt_policy <table> <chain> <target>
@@ -109,11 +119,15 @@ ipt_policy () {
 }
 
 ipt_flush () {
-	for tbl in filter mangle nat raw; do
+	for tbl in filter mangle raw; do
 		ipt -t $tbl --flush
 		ipt -t $tbl --delete-chain
 		ipt -t $tbl --zero
 	done
+	# nat is ipv4 only
+	ipt4 -t nat --flush
+	ipt4 -t nat --delete-chain
+	ipt4 -t nat --zero
 }
 
 # syntax: ipt_rule <table> <chain> <protocol> <target> [extra-stuff]
