@@ -2,9 +2,9 @@
 
 ### BEGIN INIT INFO
 # Provides:          firewall
-# Required-Start:    $local_fs $remote_fs $network
-# Required-Stop:     $local_fs $remote_fs $network
-# Default-Start:     S
+# Required-Start:    $network $local_fs
+# Required-Stop:     $network $local_fs
+# Default-Start:     2 3 4 5
 # Default-Stop:      0 6
 # Short-Description: workstation/server iptables firewall
 ### END INIT INFO
@@ -12,33 +12,53 @@
 [ $(id -u) -eq 0 ] || (echo "must be run as root" ; exit 1)
 
 [ -x "$(which iptables)" ] || (echo "iptables not found or executable" ; exit 1)
+IPV6=y
+[ -x "$(which ip6tables)" ] || (echo "no ip6tables found" ; IPV6=n)
+
+# TODO: config file & install command
+# TODO: custom IPv6 rules
+# TODO: make sure that localhost-net is only reachable through dev lo
+
+VERBOSE=y
 
 CONF_FILE=/etc/firewall.conf
 [ -f $CONF_FILE ] && . $CONF_FILE
 
 start () {
+	set_net_options
+
 	ipt_policy filter INPUT   DROP
 	ipt_policy filter FORWARD DROP
 	ipt_policy filter OUTPUT  ACCEPT
 
-	set_net_options
+	# allow localhost
+	ipt_rule filter INPUT  all ACCEPT -i lo
+	ipt_rule filter OUTPUT all ACCEPT -o lo
 
-	ipt_lo_accept
+	ipt_state_rule filter INPUT tcp  ACCEPT "ESTABLISHED,RELATED"
+	ipt_state_rule filter INPUT udp  ACCEPT "ESTABLISHED,RELATED"
+	ipt_state_rule filter INPUT icmp ACCEPT "ESTABLISHED,RELATED"
+	ipt_state_rule filter INPUT all  ACCEPT "UNTRACKED"
+	ipt_state_rule filter INPUT all  DROP   "INVALID"
+
+	# stateless services
+	ipt_notrack_port udp 123
 	
-	ipt_notrack_service udp 123
-
-	# allow packets for which we do not want to keep connection-tracking information
-	ipt_state_rule filter INPUT  tcp  ACCEPT "ESTABLISHED,RELATED"
-	ipt_state_rule filter INPUT  udp  ACCEPT "ESTABLISHED,RELATED"
-	ipt_state_rule filter INPUT  icmp ACCEPT "ESTABLISHED,RELATED"
-	ipt_state_rule filter INPUT  all  ACCEPT "UNTRACKED"
-	ipt_state_rule filter INPUT  all  DROP   "INVALID"
-	ipt_state_rule filter OUTPUT all  ACCEPT "ESTABLISHED,NEW"
-
+	# statefull services
 	ipt_allow_port tcp 22
 
-	# reject the rest
-	#ipt_rule filter INPUT all REJECT
+	# allow ping
+	ipt4_rule filter INPUT icmp ACCEPT -m icmp   --icmp-type   echo-request
+	ipt6_rule filter INPUT icmp ACCEPT -m icmpv6 --icmpv6-type echo-request
+
+	# keep some counters about which types of packets we are dropping 
+	ipt_rule filter INPUT all DROP -m pkttype --pkt-type broadcast
+	ipt_rule filter INPUT all DROP -m pkttype --pkt-type multicast
+
+	# track outgoing connections by protocol
+	ipt_state_rule filter OUTPUT tcp  ACCEPT "ESTABLISHED,NEW"
+	ipt_state_rule filter OUTPUT udp  ACCEPT "ESTABLISHED,NEW"
+	ipt_state_rule filter OUTPUT icmp ACCEPT "ESTABLISHED,NEW"
 }
 
 stop () {
@@ -75,23 +95,42 @@ set_net_options () {
 	echo 0 > /proc/sys/net/ipv6/conf/all/accept_source_route
 }
 
+# iptables rule for ipv4
+ipt4 () {
+	[ $VERBOSE = "y" ] && echo iptables "$@"
+	iptables "$@"
+}
+
+# iptables rule for ipv6
+ipt6 () {
+	[ $IPV6 = "y" ] && (
+		[ $VERBOSE = "y" ] && echo ip6tables "$@"
+		ip6tables "$@"
+	)
+}
+# iptables rule for ipv4 and ipv6
+ipt () {
+	ipt4 "$@"
+	ipt6 "$@"
+}
+
 # syntax: ipt_policy <table> <chain> <target>
 ipt_policy () {
-	iptables -t $1 -P $2 $3
+	[ $# -ne 3 ] && "ipt_policy error: $@" && return 1
+	ipt -t $1 -P $2 $3
+	return 0
 }
 
-# TODO: chains as parameters
 ipt_flush () {
-	for tbl in filter mangle nat raw; do
-		iptables -t $tbl --flush
-		iptables -t $tbl --delete-chain
+	for tbl in filter mangle raw; do
+		ipt -t $tbl --flush
+		ipt -t $tbl --delete-chain
+		ipt -t $tbl --zero
 	done
-	iptables -t filter --zero
-}
-
-ipt_lo_accept () {
-	ipt_rule filter INPUT  all ACCEPT -i lo
-	ipt_rule filter OUTPUT all ACCEPT -o lo
+	# nat is ipv4 only
+	ipt4 -t nat --flush
+	ipt4 -t nat --delete-chain
+	ipt4 -t nat --zero
 }
 
 # syntax: ipt_rule <table> <chain> <protocol> <target> [extra-stuff]
@@ -102,8 +141,7 @@ ipt_rule () {
 	local p=$3
 	local j=$4
 	shift 4
-	iptables -t $t -A $c -p $p -j $j "$@"
-	echo iptables -t $t -A $c -p $p -j $j "$@"
+	ipt -t $t -A $c -p $p -j $j "$@"
 	return 0
 }
 
@@ -129,25 +167,22 @@ ipt_allow_port () {
 }
 
 # syntax: ipt_notrack_service <protocol> <port>
-ipt_notrack_service () {
-    (
-		[ $# -eq 2 ] && \
-		iptables -t raw -A PREROUTING -p $1 --dport $2 -j CT --notrack && \
-		iptables -t raw -A OUTPUT     -p $1 --sport $2 -j CT --notrack
-	) \
-	|| (echo "ipt_notrack_service error: $@" ; return 1)
+ipt_notrack_port () {
+	[ $# -ne 2 ] && "ipt_notrack_port error: $@" && return 1
+	ipt -t raw -A PREROUTING -p $1 --dport $2 -j CT --notrack
+	ipt -t raw -A OUTPUT     -p $1 --sport $2 -j CT --notrack
 	return 0
 }
 
 status () {
 	echo "==============NAT======================="
-	iptables -t nat -L -nv
+	ipt -t nat -L -nv
 	echo "==============RAW======================="
-	iptables -t raw -L -nv
+	ipt -t raw -L -nv
 	echo "==============MANGLE===================="
-	iptables -t mangle -L -nv
+	ipt -t mangle -L -nv
 	echo "==============FILTER ==================="
-	iptables -t filter -L -nv
+	ipt -t filter -L -nv
 	echo "========================================"
 }
 
