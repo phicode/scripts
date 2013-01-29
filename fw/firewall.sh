@@ -10,13 +10,13 @@
 ### END INIT INFO
 
 [ $(id -u) -eq 0 ] || (echo "must be run as root" ; exit 1)
+[ -x "$(which iptables)" ] || (echo "iptables not found" ; exit 1)
 
-[ -x "$(which iptables)" ] || (echo "iptables not found or executable" ; exit 1)
 IPV6=y
 [ -x "$(which ip6tables)" ] || (echo "no ip6tables found" ; IPV6=n)
 
+
 # TODO: config file & install command
-# TODO: custom IPv6 rules
 # TODO: make sure that localhost-net is only reachable through dev lo
 
 VERBOSE=y
@@ -213,6 +213,17 @@ status () {
 	ipt -t filter -L -nv
 	echo "================================================="
 }
+
+#DEFAULT_CONFIG="
+## set to 'y' in order to have the firewall script output what it does
+#VERBOSE=n
+#
+## set to 'n' if no IPv6 rules should be generated
+#IPV6=y
+#
+## custom
+#"
+#echo $DEFAULT_CONFIG
 
 case "$1" in 
 	start)
