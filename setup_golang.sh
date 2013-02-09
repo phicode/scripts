@@ -20,103 +20,88 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-# A script for setting up your environment variables for a proper golang
-# development environment.
+# A script for setting up a go development environment
 
-# load utility methods
-. "$(dirname "$0")/libsh.sh"
+# TODO: allow the user to select which branch he wants to use
 
-check_programs go
+[ "$(which gcc)" = "" ] && (echo "please install gcc" ; exit 1)
+[ "$(which hg)" = "" ] && (echo "please install mercurial (hg)" ; exit 1)
 
-# expected go home
-EXP_GO_PATH="$HOME/dev/go"
-EXP_MYGO_PATH="$HOME/dev/mygo"
-EXP_PATHS="${EXP_GO_PATH}/src ${EXP_GO_PATH}/pkg ${EXP_GO_PATH}/bin"
-EXP_PATHS="${EXP_PATHS} ${EXP_MYGO_PATH}/src ${EXP_MYGO_PATH}/pkg"
-
-GO_PROFILE="$HOME/.goprofile"
-PROFILE="$HOME/.profile"
-BASHRC="$HOME/.bashrc"
-INCLUDE_STR=". $GO_PROFILE"
-
-ALL_OK=1
-DO_CREATE_DIRS=""
-DO_CREATE_GOPROFILE=0
-DO_APPEND_BASHRC=""
-DO_APPEND_PROFILE=""
-
-# create go-home and go-bin if they dont exist
-for d in $EXP_PATHS; do
-	if [ ! -d "$d" ]; then
-		DO_CREATE_DIRS="$DO_CREATE_DIRS $d"
-		ALL_OK=0
-	fi
-done
-
-if [ ! -f "$GO_PROFILE" ]; then
-	DO_CREATE_GOPROFILE=1
-	ALL_OK=0
-fi
-
-grep "$INCLUDE_STR" $PROFILE > /dev/null
-if [ $? -ne 0 ]; then
-	DO_APPEND_PROFILE="$INCLUDE_STR"
-	ALL_OK=0
-fi
-grep "$INCLUDE_STR" $BASHRC > /dev/null
-if [ $? -ne 0 ]; then
-	DO_APPEND_BASHRC="$INCLUDE_STR"
-	ALL_OK=0
-fi
-
-if [ $ALL_OK -eq 1 ]; then
-	echo "your go installation should be ready"
-	exit 0
-fi
-
-echo ""
-echo "this script will do the following"
-echo "----------------------------------"
-for d in $DO_CREATE_DIRS; do
-echo "create directory $d"
-done
-[ $DO_CREATE_GOPROFILE -ne 0 ] && \
-echo "add $GO_PROFILE"
-[ "$DO_APPEND_BASHRC" != "" ] && \
-echo "include $GO_PROFILE from $BASHRC"
-[ "$DO_APPEND_PROFILE" != "" ] && \
-echo "include $GO_PROFILE from $PROFILE"
-echo "----------------------------------"
-echo ""
-echo -n "would you like to proceed? "
-read_yes_no
-if [ $? -ne 0 ]; then
-	echo "aborting"
+die () {
+	echo "aborting due to failure"
 	exit 1
+}
+
+devdir="${HOME}/dev"
+if [ ! -d $devdir ]; then
+	echo "creating directory $devdir"
+	mkdir "$devdir" || die
 fi
 
-for d in $DO_CREATE_DIRS; do
-	mkdir -p "$d"
-done
+cd "$devdir"
 
-if [ $DO_CREATE_GOPROFILE -ne 0 ]; then
-	cat > "${GO_PROFILE}" << EOF
+if [ ! -d "go" ]; then
+	echo "cloning go repo"
+	hg clone "https://code.google.com/p/go" || die
+	cd go/src
+else
+	cd go
+	echo "updating go repo"
+	hg update || die
+	cd src
+fi
 
-export GOBIN="${EXP_GO_PATH}/bin"
-export GOPATH="${EXP_GO_PATH}:${EXP_MYGO_PATH}"
+./all.bash
 
-PATH="\${GOBIN}:\${PATH}"
+# additional archs
+# choose from arch: 386 amd64 arm
+#               os: linux windows darwin freebsd openbsd netbsd plan9
+# build with env CGO_ENABLED=0 GOOS=... GOARCH=... go build ...
 
-# 'go get' will install packages into the first first directory of GOPATH
-# add further include paths for your other local projects like so:
-#  export GOPATH="\$GOPATH:/path/to/other/project"
+#env CGO_ENABLED=0 GOOS=windows GOARCH=amd64 ./make.bash --no-clean
 
+setup_goroot="$HOME/dev/go"
+setup_mygo="$HOME/dev/mygo"
+setup_goprofile="${HOME}/.goprofile"
+
+echo "creating $setup_goprofile ..."
+cat > "${setup_goprofile}" << EOF
+# go environment setup
+# this file is included from .profile and .bashrc
+
+if [ "\$GOPROFILE" != "Y" ]; then
+	export GOPROFILE="Y"
+	export GOROOT="${setup_goroot}"
+	export GOPATH="${setup_mygo}"
+	export GOBIN="\${GOROOT}/bin"
+	export PATH="\${GOBIN}:\${PATH}"
+	
+	# 'go get' will install packages into the first first directory of GOPATH
+	# add further include paths for your other local projects in the file \${HOME}/.gopaths
+	#  export GOPATH="\$GOPATH:/path/to/other/project"
+	
+	[ -f "\${HOME}/.gopaths" ] && . "\${HOME}/.gopaths"
+fi
 EOF
+
+
+user_profile="${HOME}/.profile"
+user_bashrc="${HOME}/.bashrc"
+include_str=". ${setup_goprofile}"
+search_include="^\. ${setup_goprofile}$"
+
+grep "$search_include" "$user_profile" > /dev/null
+if [ $? -ne 0 ]; then
+	echo "adding an include for $setup_goprofile to $user_profile ..."
+	echo "" >> "$user_profile"
+	echo "$include_str" >> "$user_profile"
+fi
+grep "$search_include" $user_bashrc > /dev/null
+if [ $? -ne 0 ]; then
+	echo "adding an include for $setup_goprofile to $user_bashrc ..."
+	echo "" >> "$user_bashrc"
+	echo "$include_str" >> "$user_bashrc"
 fi
 
-if [ "$DO_APPEND_BASHRC" != "" ]; then
-	echo "$INCLUDE_STR" >> "$BASHRC"
-fi
-if [ "$DO_APPEND_PROFILE" != "" ] ; then
-	echo "$INCLUDE_STR" >> "$PROFILE"
-fi
+echo ""
+echo "all done - you might need to restart shells which do not yet have the environment variables"
