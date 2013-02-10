@@ -9,17 +9,16 @@
 # Short-Description: workstation/server iptables firewall
 ### END INIT INFO
 
-[ $(id -u) -eq 0 ] || (echo "must be run as root" ; exit 1)
-[ -x "$(which iptables)" ] || (echo "iptables not found" ; exit 1)
-
-IPV6=y
-[ -x "$(which ip6tables)" ] || (echo "no ip6tables found" ; IPV6=n)
-
-
 # TODO: config file & install command
 # TODO: make sure that localhost-net is only reachable through dev lo
 
+IPV6=y
 VERBOSE=y
+
+[ $(id -u) -eq 0 ]          || { echo "must be run as root" ; exit 1 ; }
+[ -x "$(which iptables)" ]  || { echo "iptables not found"  ; exit 1 ; }
+[ -x "$(which ip6tables)" ] || { echo "no ip6tables found"  ; IPV6=n ; }
+
 
 CONF_FILE=/etc/firewall.conf
 [ -f $CONF_FILE ] && . $CONF_FILE
@@ -119,7 +118,7 @@ ipt () {
 
 # syntax: ipt_policy <table> <chain> <target>
 ipt_policy () {
-	[ $# -ne 3 ] && "ipt_policy error: $@" && return 1
+	[ $# -ne 3 ] && { echo "ipt_policy error: $@" ; return 1 ; }
 	ipt -t $1 -P $2 $3
 	return 0
 }
@@ -159,9 +158,9 @@ ipt6_state_rule () {
 # syntax: ipt_rule [4|6] <table> <chain> <protocol> <target> [extra-params]
 ipt_rule () {
 	local cmd=ipt
-	[ $# -lt 4 ] && echo "ipt_rule error: $@" && return 1
+	[ $# -lt 4 ] && { echo "ipt_rule error: $@" ; return 1 ; }
 	if [ "$1" = "4" -o "$1" = "6" ]; then
-		[ $# -lt 5 ] && echo "ipt_rule error: $@" && return 1
+		[ $# -lt 5 ] && { echo "ipt_rule error: $@" ; return 1 ; }
 		cmd=ipt${1}
 		shift
 	fi
@@ -174,9 +173,9 @@ ipt_rule () {
 # syntax: ipt_state_rule [4|6] <table> <chain> <protocol> <target> <states> [extra-params]
 ipt_state_rule () {
 	local proto=""
-	[ $# -lt 5 ] && echo "ipt_state_rule error: $@" && return 1
+	[ $# -lt 5 ] && { echo "ipt_state_rule error: $@" ; return 1 ; }
 	if [ "$1" = "4" -o "$1" = "6" ]; then
-		[ $# -lt 6 ] && echo "ipt_state_rule error: $@" && return 1
+		[ $# -lt 6 ] && { echo "ipt_state_rule error: $@" ; return 1 ; }
 		proto=$1
 		shift
 	fi
@@ -188,7 +187,7 @@ ipt_state_rule () {
 
 # syntax: ipt_allow_port <protocol> <port>
 ipt_allow_port () {
-	[ $# -ne 2 ] && "ipt_allow_port error: $@" && return 1
+	[ $# -ne 2 ] && { echo "ipt_allow_port error: $@" ; return 1 ; }
 	ipt_state_rule filter INPUT  $1 ACCEPT NEW --dport $2
 	ipt_rule       filter OUTPUT $1 ACCEPT     --sport $2
 	return 0
@@ -196,7 +195,7 @@ ipt_allow_port () {
 
 # syntax: ipt_notrack_service <protocol> <port>
 ipt_notrack_port () {
-	[ $# -ne 2 ] && "ipt_notrack_port error: $@" && return 1
+	[ $# -ne 2 ] && { echo "ipt_notrack_port error: $@" ; return 1 ; }
 	ipt -t raw -A PREROUTING -p $1 --dport $2 -j CT --notrack
 	ipt -t raw -A OUTPUT     -p $1 --sport $2 -j CT --notrack
 	return 0
