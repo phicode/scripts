@@ -14,13 +14,12 @@
 
 IPV6=y
 VERBOSE=y
+CONF_FILE=/etc/firewall.conf
 
 [ $(id -u) -eq 0 ]          || { echo "must be run as root" ; exit 1 ; }
 [ -x "$(which iptables)" ]  || { echo "iptables not found"  ; exit 1 ; }
 [ -x "$(which ip6tables)" ] || { echo "no ip6tables found"  ; IPV6=n ; }
 
-
-CONF_FILE=/etc/firewall.conf
 [ -f $CONF_FILE ] && . $CONF_FILE
 
 start () {
@@ -224,6 +223,10 @@ status () {
 #"
 #echo $DEFAULT_CONFIG
 
+install () {
+
+}
+
 case "$1" in 
 	start)
 		start
@@ -238,8 +241,11 @@ case "$1" in
 		stop
 		start
 		;;
+	install)
+		install
+		;;
 	*)
-		echo "usage: $0 (start|stop|restart)"
+		echo "usage: $0 (start|stop|restart|status|install)"
 		exit 1
 		;;
 esac
