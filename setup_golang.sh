@@ -24,8 +24,8 @@
 
 # TODO: allow the user to select which branch he wants to use
 
-[ "$(which gcc)" = "" ] && (echo "please install gcc" ; exit 1)
-[ "$(which hg)" = "" ] && (echo "please install mercurial (hg)" ; exit 1)
+[ "$(which gcc)" = "" ] && { echo "please install gcc"            ; exit 1 ; }
+[ "$(which hg)" = "" ]  && { echo "please install mercurial (hg)" ; exit 1 ; }
 
 die () {
 	echo "aborting due to failure"
