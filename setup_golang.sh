@@ -47,7 +47,7 @@ if [ ! -d "go" ]; then
 else
 	cd go
 	echo "updating go repo"
-	hg update || die
+	hg pull --update || die
 	cd src
 fi
 
@@ -58,7 +58,7 @@ fi
 #               os: linux windows darwin freebsd openbsd netbsd plan9
 # build with env CGO_ENABLED=0 GOOS=... GOARCH=... go build ...
 
-#env CGO_ENABLED=0 GOOS=windows GOARCH=amd64 ./make.bash --no-clean
+env CGO_ENABLED=0 GOOS=windows GOARCH=amd64 ./make.bash --no-clean
 
 setup_goroot="$HOME/dev/go"
 setup_mygo="$HOME/dev/mygo"
