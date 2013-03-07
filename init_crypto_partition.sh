@@ -21,39 +21,50 @@
 # THE SOFTWARE.
 
 if [ $# -ne 1 ]; then
-    echo "Usage: $0 <partition>"
+    echo "Usage:   $0 <drive>"
+    echo "Example: $0 /dev/sdc"
     exit 1
 fi
-partition="$1"
+PATH="/sbin:/usr/sbin:/bin:/usr/bin:${PATH}"
+fstype="ext2"
+
+drive="$1"
+crypt_partition="${drive}2"
 
 # load utility methods
 . "$(dirname "$0")/libsh.sh"
+check_root
+check_programs parted mkfs.${fstype} cryptsetup tune2fs
 
-PATH="/sbin:/usr/sbin:/bin:/usr/bin:${PATH}"
+echo "partitioning device"
+parted -s "$drive" mklabel msdos
+parted -s "$drive" mkpart  primary ext2   "0%"  "10%"
+parted -s "$drive" mkpart  primary       "10%" "100%"
+parted -s "$drive" print
 
-fstype="ext2"
-check_programs "mkfs.$fstype" cryptsetup tune2fs
-mkfs_bin="$(which mkfs.$fstype)"
+echo "formatting ${drive}1 with $fstype ..."
+mkfs.${fstype} -q "${drive}1"
 
+echo "creating crypto container in $crypt_partition"
 cryptsetup                   \
 	--cipher aes-xts-plain64 \
 	--hash sha256            \
 	--key-size 512           \
 	--verify-passphrase      \
 	--use-random             \
-	luksFormat "$partition"
+	luksFormat "$crypt_partition"
 
 if [ $? -ne 0 ]; then
 	echo "exiting"
 	exit
 fi
 
-LUKS_UUID=$(cryptsetup luksUUID "$partition")
+LUKS_UUID=$(cryptsetup luksUUID "$crypt_partition")
 echo "The UUID of the newly created LUKS container is: $LUKS_UUID"
 
-init_name="init_crypto_$$"
+init_name="luks_$(basename $crypt_partition)"
 
-cryptsetup luksOpen "$partition" "$init_name"
+cryptsetup luksOpen "$crypt_partition" "$init_name"
 cryptsetup status "$init_name"
 
 if [ $? -ne 0 ]; then
@@ -61,15 +72,23 @@ if [ $? -ne 0 ]; then
 	exit
 fi
 
-echo "creating $fstype filesystem ..."
-$mkfs_bin -q "/dev/mapper/$init_name"
+echo "formatting partition inside crypto container $crypt_partition with $fstype ..."
+mkfs.${fstype} -q "/dev/mapper/$init_name"
 
 tune2fs -l "/dev/mapper/$init_name" | grep UUID
 
+echo "syncing ..."
 sync
-sleep 2
 
+echo "closing crypto container ..."
 cryptsetup luksClose "$init_name"
 
 echo ""
 echo ""
+
+exit 0
+
+# TODO: cryptmount entry for users
+#       create a discovery script to find crypto containers
+# container: a617ca77-becf-4ac6-98b2-71f9413a4a47
+# fs:        29077443-e8ce-4911-bc94-4c93ccbf9e04
