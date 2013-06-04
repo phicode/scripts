@@ -1,0 +1,76 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          name
+# Required-Start:    $network
+# Required-Stop:     $network
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: desc
+### END INIT INFO
+
+. /lib/lsb/init-functions
+
+NAME=prog
+DAEMON=/usr/bin/prog
+PIDFILE=/var/run/prog.pid
+ARGS=
+RELOAD_SIGNAL=HUP
+
+test -x $DAEMON || exit 5
+
+case $1 in
+  start)
+    if [ -e $PIDFILE ]; then
+      if pidofproc -p $PIDFILE $DAEMON ; then
+      	log_warning_msg "$NAME is already running"
+    	exit 0
+      fi
+    fi
+    if start_daemon -p $PIDFILE $DAEMON $ARGS ; then
+    	log_success_msg "$name started"
+    else
+    	log_failure_msg "$name failed to start"
+    fi
+    ;;
+  stop)
+    if [ -e $PIDFILE ]; then
+      if pidofproc -p $PIDFILE $DAEMON ; then
+      	if killproc -p $PIDFILE $DAEMON ; then
+          /bin/rm -f $PIDFILE
+      	  log_success_msg "$NAME stopped"
+    	  exit 0
+    	fi
+    	log_failure_msg "$name failed to stop"
+    	exit 1
+      fi
+    fi
+    log_failure_msg "$name is not running"
+    exit 1
+    ;;
+  restart)
+    $0 stop && sleep 1 && $0 start
+    ;;
+  status)
+    if [ -e $PIDFILE ]; then
+      if pidofproc -p $PIDFILE $DAEMON ; then
+      	log_success_msg "$name is running"
+      fi
+    fi
+    log_success_msg "$NAME is not running"
+    ;;
+  reload)
+    if [ -e $PIDFILE ]; then
+      if pidofproc -p $PIDFILE $DAEMON ; then
+      	if killproc -p $PIDFILE $DAEMON $RELOAD_SIGNAL; then
+          log_success_msg "$NAME reloaded"
+          exit 0
+        fi
+      fi
+    fi
+    log_failure_msg "$NAME reload failed"
+    ;;
+  *)
+    echo "usage: $0 {start|stop|restart|reload|status}"
+    exit 2
+    ;;
+esac
