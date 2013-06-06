@@ -41,14 +41,14 @@ mk_link() {
 
     if [ -e "$src" ]; then
         if [ -L "$link" ]; then
-		rm "$link"
-	fi
+            rm "$link"
+        fi
         echo "Link: $link -> $src"
         ln -s "$src" "$link"
     else
         if [ -L "$link" ]; then
-                echo "WARN: removing old link: $link"
-                rm "$link"
+            echo "WARN: removing old link: $link"
+            rm "$link"
         fi
     fi
 }
@@ -114,7 +114,7 @@ extract() {
 read_yes_no() {
     p="[Y/n]: "
     if [ $# -ne 0 ]; then
-        p=$1
+        p="$1 $p"
     fi
 
     while (true); do
