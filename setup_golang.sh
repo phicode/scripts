@@ -58,7 +58,7 @@ fi
 #               os: linux windows darwin freebsd openbsd netbsd plan9
 # build with env CGO_ENABLED=0 GOOS=... GOARCH=... go build ...
 
-env CGO_ENABLED=0 GOOS=windows GOARCH=amd64 ./make.bash --no-clean
+#env CGO_ENABLED=0 GOOS=windows GOARCH=amd64 ./make.bash --no-clean
 
 setup_goroot="$HOME/dev/go"
 setup_mygo="$HOME/dev/mygo"
@@ -76,7 +76,7 @@ if [ "\$GOPROFILE" != "Y" ]; then
 	export GOBIN="\${GOROOT}/bin"
 	export PATH="\${GOBIN}:\${PATH}"
 	
-	# 'go get' will install packages into the first first directory of GOPATH
+	# 'go get' will install packages into the first directory of GOPATH
 	# add further include paths for your other local projects in the file \${HOME}/.gopaths
 	#  export GOPATH="\$GOPATH:/path/to/other/project"
 	
