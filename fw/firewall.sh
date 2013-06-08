@@ -25,7 +25,7 @@ CONF_FILE=/etc/firewall.conf
 start () {
 	set_net_options
 
-	ipt_policy filter INPUT   DROP
+	ipt_policy filter INPUT   ACCEPT
 	ipt_policy filter FORWARD DROP
 	ipt_policy filter OUTPUT  ACCEPT
 
@@ -54,6 +54,9 @@ start () {
 	# keep some counters about which types of packets we are dropping 
 	ipt_rule filter INPUT all DROP -m pkttype --pkt-type broadcast
 	ipt_rule filter INPUT all DROP -m pkttype --pkt-type multicast
+
+	# reject the rest of the input traffic
+	ipt_rule filter INPUT all REJECT
 
 	# track outgoing connections by protocol
 	ipt_rule  filter OUTPUT tcp    ACCEPT
@@ -223,9 +226,9 @@ status () {
 #"
 #echo $DEFAULT_CONFIG
 
-install () {
-
-}
+#install () {
+#
+#}
 
 case "$1" in 
 	start)
