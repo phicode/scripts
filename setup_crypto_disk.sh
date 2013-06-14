@@ -29,7 +29,7 @@ PATH="/sbin:/usr/sbin:/bin:/usr/bin:${PATH}"
 fstype="ext2"
 
 drive="$1"
-crypt_partition="${drive}2"
+crypt_partition="${drive}1"
 
 # load utility methods
 . "$(dirname "$0")/libsh.sh"
@@ -38,18 +38,17 @@ check_programs parted mkfs.${fstype} cryptsetup tune2fs
 
 echo "partitioning device"
 parted -s "$drive" mklabel msdos
-parted -s "$drive" mkpart  primary ext2   "0%"  "10%"
-parted -s "$drive" mkpart  primary       "10%" "100%"
+parted -s "$drive" mkpart  primary  "0%" "100%"
 parted -s "$drive" print
 
-echo "formatting ${drive}1 with $fstype ..."
-mkfs.${fstype} -q "${drive}1"
+#echo "formatting ${drive}1 with $fstype ..."
+#mkfs.${fstype} -q "${drive}1"
 
 echo "creating crypto container in $crypt_partition"
 cryptsetup                   \
 	--cipher aes-xts-plain64 \
 	--hash sha256            \
-	--key-size 512           \
+	--key-size 256           \
 	--verify-passphrase      \
 	--use-random             \
 	luksFormat "$crypt_partition"
@@ -80,6 +79,11 @@ tune2fs -l "/dev/mapper/$init_name" | grep UUID
 echo "syncing ..."
 sync
 
+# prevent io-device-busy error which happens when closing the device too early
+sleep 1
+sync
+sleep 1
+
 echo "closing crypto container ..."
 cryptsetup luksClose "$init_name"
 
@@ -92,3 +96,4 @@ exit 0
 #       create a discovery script to find crypto containers
 # container: a617ca77-becf-4ac6-98b2-71f9413a4a47
 # fs:        29077443-e8ce-4911-bc94-4c93ccbf9e04
+
