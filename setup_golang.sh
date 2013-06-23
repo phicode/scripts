@@ -61,6 +61,7 @@ fi
 #env CGO_ENABLED=0 GOOS=windows GOARCH=amd64 ./make.bash --no-clean
 
 setup_goroot="$HOME/dev/go"
+setup_gobin="$HOME/dev/go/bin"
 setup_mygo="$HOME/dev/mygo"
 setup_goprofile="${HOME}/.goprofile"
 
@@ -69,12 +70,12 @@ cat > "${setup_goprofile}" << EOF
 # go environment setup
 # this file is included from .profile and .bashrc
 
-if [ "\$GOPROFILE" != "Y" ]; then
-	export GOPROFILE="Y"
+expr match "\$PATH" ".*${setup_gobin}.*" > /dev/null
+if [ \$? -ne 0 ]; then
 	export GOROOT="${setup_goroot}"
 	export GOPATH="${setup_mygo}"
-	export GOBIN="\${GOROOT}/bin"
-	export PATH="\${GOBIN}:\${PATH}"
+	export GOBIN="${setup_gobin}"
+	export PATH="${setup_gobin}:\${PATH}"
 	
 	# 'go get' will install packages into the first directory of GOPATH
 	# add further include paths for your other local projects in the file \${HOME}/.gopaths
