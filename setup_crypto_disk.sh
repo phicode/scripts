@@ -27,7 +27,6 @@ if [ $# -ne 1 ]; then
 fi
 PATH="/sbin:/usr/sbin:/bin:/usr/bin:${PATH}"
 fstype="ext2"
-
 drive="$1"
 crypt_partition="${drive}1"
 
@@ -37,12 +36,9 @@ check_root
 check_programs parted mkfs.${fstype} cryptsetup tune2fs
 
 echo "partitioning device"
-parted -s "$drive" mklabel msdos
+parted -s "$drive" mklabel gpt
 parted -s "$drive" mkpart  primary  "0%" "100%"
 parted -s "$drive" print
-
-#echo "formatting ${drive}1 with $fstype ..."
-#mkfs.${fstype} -q "${drive}1"
 
 echo "creating crypto container in $crypt_partition"
 cryptsetup                   \
@@ -59,41 +55,27 @@ if [ $? -ne 0 ]; then
 fi
 
 LUKS_UUID=$(cryptsetup luksUUID "$crypt_partition")
-echo "The UUID of the newly created LUKS container is: $LUKS_UUID"
+echo "LUKS container UUID: $LUKS_UUID"
 
 init_name="luks_$(basename $crypt_partition)"
 
 cryptsetup luksOpen "$crypt_partition" "$init_name"
-cryptsetup status "$init_name"
-
 if [ $? -ne 0 ]; then
 	echo "failed to open the new luks partition, exiting"
 	exit
 fi
 
-echo "formatting partition inside crypto container $crypt_partition with $fstype ..."
+echo "creating an $fstype filesystem inside the crypto container ..."
 mkfs.${fstype} -q "/dev/mapper/$init_name"
 
-tune2fs -l "/dev/mapper/$init_name" | grep UUID
-
-echo "syncing ..."
 sync
-
-# prevent io-device-busy error which happens when closing the device too early
-sleep 1
-sync
-sleep 1
+sleep 5 # luksClose gives an ioctl error (resource busy) if it is invoked too close to the last operation
 
 echo "closing crypto container ..."
 cryptsetup luksClose "$init_name"
 
 echo ""
 echo ""
+echo "all done"
 
 exit 0
-
-# TODO: cryptmount entry for users
-#       create a discovery script to find crypto containers
-# container: a617ca77-becf-4ac6-98b2-71f9413a4a47
-# fs:        29077443-e8ce-4911-bc94-4c93ccbf9e04
-
