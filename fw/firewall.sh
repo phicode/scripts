@@ -235,7 +235,7 @@ DEFAULT_RULES="
 #  # ipv4
 #  ipt_state_rule 4 filter INPUT tcp ACCEPT NEW --dport 1234
 #  # ipv6 only
-#  ipt_state_rule 4 filter INPUT all ACCEPT NEW --dport 1234
+#  ipt_state_rule 6 filter INPUT udp ACCEPT NEW --dport 1234
 
 ipt_allow_port tcp 22 # ssh
 "
@@ -246,23 +246,34 @@ install () {
 		exit 1
 	fi
 
-	cp $0 /etc/init.d/firewall
-	chmod 750 /etc/init.d/firewall
-	chkconfig --add firewall
-
 	if [ ! -f $CONF_FILE ]; then
 		echo "creating default config file $CONF_FILE"
 		echo "$DEFAULT_CONFIG" > $CONF_FILE
+		chmod 640 $CONF_FILE
 	fi
-	chmod 640 $CONF_FILE
 
 	if [ ! -f $RULES_FILE ]; then
 		echo "creating default rules file $RULES_FILE"
 		echo "$DEFAULT_RULES" > $RULES_FILE
+		chmod 640 $RULES_FILE
 	fi
-	chmod 640 $RULES_FILE
 
-	/etc/init.d/firewall start
+	dst=/etc/init.d/firewall
+	inst=n
+	if [ ! -f $dst ]; then
+		inst=y
+	else
+		if [ "$(md5sum - < $0)" != "$(md5sum - < $dst)" ]; then
+			inst=y
+		fi
+	fi
+	if [ $inst = 'y' ]; then
+		echo "installing firewall to $dst"
+		cp $0 $dst
+		chmod 750 $dst
+		chkconfig --add firewall
+		$dst start
+	fi
 }
 
 case "$1" in 
