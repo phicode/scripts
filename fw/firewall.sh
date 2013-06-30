@@ -15,12 +15,13 @@
 IPV6=y
 VERBOSE=y
 CONF_FILE=/etc/firewall.conf
+RULES_FILE=/etc/firewall.rules
+
+[ -f $CONF_FILE ] && . $CONF_FILE
 
 [ $(id -u) -eq 0 ]          || { echo "must be run as root" ; exit 1 ; }
 [ -x "$(which iptables)" ]  || { echo "iptables not found"  ; exit 1 ; }
 [ -x "$(which ip6tables)" ] || { echo "no ip6tables found"  ; IPV6=n ; }
-
-[ -f $CONF_FILE ] && . $CONF_FILE
 
 start () {
 	set_net_options
@@ -40,11 +41,7 @@ start () {
 	ipt6_state_rule filter INPUT icmpv6 ACCEPT "ESTABLISHED,RELATED"
 	ipt_state_rule  filter INPUT all    DROP   "INVALID"
 
-	# stateless services
-	ipt_notrack_port udp 123
-	
-	# statefull services
-	ipt_allow_port tcp 22
+	[ -f $RULES_FILE ] && . $RULES_FILE
 
 	# allow icmp4 ping and all icmp6 except redirect
 	ipt4_rule filter INPUT icmp   ACCEPT -m icmp  --icmp-type   echo-request
@@ -195,7 +192,7 @@ ipt_allow_port () {
 	return 0
 }
 
-# syntax: ipt_notrack_service <protocol> <port>
+# syntax: ipt_notrack_port <protocol> <port>
 ipt_notrack_port () {
 	[ $# -ne 2 ] && { echo "ipt_notrack_port error: $@" ; return 1 ; }
 	ipt -t raw -A PREROUTING -p $1 --dport $2 -j CT --notrack
@@ -215,23 +212,69 @@ status () {
 	echo "================================================="
 }
 
-#DEFAULT_CONFIG="
-## set to 'y' in order to have the firewall script output what it does
-#VERBOSE=n
-#
-## set to 'n' if no IPv6 rules should be generated
-#IPV6=y
-#
-## custom
-#"
-#echo $DEFAULT_CONFIG
+DEFAULT_CONFIG="
+# set to 'y' in order to have the firewall script output what it does
+VERBOSE=n
 
-#install () {
+# set to 'n' if no IPv6 rules should be generated
+IPV6=y
+"
+DEFAULT_RULES="
+# custom firewall rules
 #
-#}
+# available methods:
+#  ipt_rule [4|6] <table> <chain> <protocol> <target> [extra-params]
+#  ipt_state_rule [4|6] <table> <chain> <protocol> <target> <states> [extra-params]
+#  ipt_allow_port <protocol> <port>
+#  ipt_notrack_port <protocol> <port>
+#
+# examples:
+#  # statefull services
+#  ipt_allow_port tcp 22
+#
+#  # stateless services (no connection tracking)
+#  ipt_notrack_port udp 123
+#
+#  # ipv4
+#  ipt_state_rule 4 filter INPUT tcp ACCEPT NEW --dport 1234
+#  # ipv6 only
+#  ipt_state_rule 4 filter INPUT all ACCEPT NEW --dport 1234
+
+# ntp
+ipt_notrack_port udp 123
+
+# ssh
+ipt_allow_port tcp 22
+"
+
+install () {
+	if [ ! -e "$(which chkconfig)" ]; then
+		echo "program chkconfig not found"
+		exit 1
+	fi
+
+	cp $0 /etc/init.d/firewall
+	chmod 750 /etc/init.d/firewall
+	chkconfig --add firewall
+
+	if [ ! -f $CONF_FILE ]; then
+		echo "creating default config file $CONF_FILE"
+		echo "$DEFAULT_CONFIG" > $CONF_FILE
+	fi
+	chmod 640 $CONF_FILE
+
+	if [ ! -f $RULES_FILE ]; then
+		echo "creating default rules file $RULES_FILE"
+		echo "$DEFAULT_RULES" > $RULES_FILE
+	fi
+	chmod 640 $RULES_FILE
+
+	/etc/init.d/firewall start
+}
 
 case "$1" in 
-	start)
+	start|restart|reload|force-reload)
+		stop
 		start
 		;;
 	stop)
@@ -239,10 +282,6 @@ case "$1" in
 		;;
 	status)
 		status
-		;;
-	restart|reload|force-reload)
-		stop
-		start
 		;;
 	install)
 		install
