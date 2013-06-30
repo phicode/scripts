@@ -240,11 +240,7 @@ DEFAULT_RULES="
 #  # ipv6 only
 #  ipt_state_rule 4 filter INPUT all ACCEPT NEW --dport 1234
 
-# ntp
-ipt_notrack_port udp 123
-
-# ssh
-ipt_allow_port tcp 22
+ipt_allow_port tcp 22 # ssh
 "
 
 install () {
