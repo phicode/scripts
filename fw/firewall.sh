@@ -9,9 +9,6 @@
 # Short-Description: workstation/server iptables firewall
 ### END INIT INFO
 
-# TODO: config file & install command
-# TODO: make sure that localhost-net is only reachable through dev lo
-
 IPV6=y
 VERBOSE=y
 CONF_FILE=/etc/firewall.conf
