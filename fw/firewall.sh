@@ -38,7 +38,14 @@ start () {
 	ipt6_state_rule filter INPUT icmpv6 ACCEPT "ESTABLISHED,RELATED"
 	ipt_state_rule  filter INPUT all    DROP   "INVALID"
 
-	[ -f $RULES_FILE ] && . $RULES_FILE
+	# create chains
+	ipt -t filter --new-chain user_input
+	ipt -t filter --new-chain user_output
+
+	ipt -t filter -A INPUT  -j user_input
+	ipt -t filter -A OUTPUT -j user_output
+
+	load_user_rules
 
 	# allow icmp4 ping and all icmp6 except redirect
 	ipt4_rule filter INPUT icmp   ACCEPT -m icmp  --icmp-type   echo-request
@@ -60,11 +67,33 @@ start () {
 }
 
 stop () {
+	ipt_flush_all
+
 	ipt_policy filter INPUT   ACCEPT
 	ipt_policy filter FORWARD ACCEPT
 	ipt_policy filter OUTPUT  ACCEPT
+}
 
-	ipt_flush
+restart () {
+	stop
+	start
+}
+
+reload () {
+	flush_user_rules
+	load_user_rules
+}
+
+flush_user_rules () {
+	ipt -t raw    --flush
+	ipt -t filter --flush user_input
+	ipt -t filter --flush user_output
+}
+
+load_user_rules () {
+	[ -f $RULES_FILE ] && . $RULES_FILE
+	ipt -t filter -A user_input  -j RETURN
+	ipt -t filter -A user_output -j RETURN
 }
 
 set_net_options () {
@@ -119,7 +148,7 @@ ipt_policy () {
 	return 0
 }
 
-ipt_flush () {
+ipt_flush_all () {
 	for tbl in filter mangle raw; do
 		ipt -t $tbl --flush
 		ipt -t $tbl --delete-chain
@@ -184,16 +213,16 @@ ipt_state_rule () {
 # syntax: ipt_allow_port <protocol> <port>[:<range>]
 ipt_allow_port () {
 	[ $# -ne 2 ] && { echo "ipt_allow_port error: $@" ; return 1 ; }
-	ipt_state_rule filter INPUT  $1 ACCEPT NEW --dport $2
-	ipt_rule       filter OUTPUT $1 ACCEPT     --sport $2
+	ipt_state_rule filter user_input  $1 ACCEPT NEW --dport $2
+	ipt_rule       filter user_output $1 ACCEPT     --sport $2
 	return 0
 }
 
 # syntax: ipt_notrack_port <protocol> <port>[:<range>]
 ipt_notrack_port () {
 	[ $# -ne 2 ] && { echo "ipt_notrack_port error: $@" ; return 1 ; }
-	ipt -t raw -A PREROUTING -p $1 --dport $2 -j CT --notrack
-	ipt -t raw -A OUTPUT     -p $1 --sport $2 -j CT --notrack
+	ipt_rule raw PREROUTING $1 CT --notrack --dport $2
+	ipt_rule raw OUTPUT     $1 CT --notrack --sport $2
 	return 0
 }
 
@@ -220,8 +249,6 @@ DEFAULT_RULES="
 # custom firewall rules
 #
 # available methods:
-#  ipt_rule [4|6] <table> <chain> <protocol> <target> [extra-params]
-#  ipt_state_rule [4|6] <table> <chain> <protocol> <target> <states> [extra-params]
 #  ipt_allow_port <protocol> <port>[:<range>]
 #  ipt_notrack_port <protocol> <port>[:<range>]
 #
@@ -232,10 +259,6 @@ DEFAULT_RULES="
 #  # stateless services (no connection tracking)
 #  ipt_notrack_port udp 123
 #
-#  # ipv4
-#  ipt_state_rule 4 filter INPUT tcp ACCEPT NEW --dport 1234
-#  # ipv6 only
-#  ipt_state_rule 6 filter INPUT udp ACCEPT NEW --dport 1234
 
 ipt_allow_port tcp 22 # ssh
 "
@@ -307,15 +330,17 @@ add () {
 
 	echo "$rule" >> $RULES_FILE
 	echo "reloading firewall"
-	stop ; start
+	reload
 }
 
 # TODO: rules in $RULES_FILE through custom chains
 
 case "$1" in 
-	start|restart|reload|force-reload)
-		stop
-		start
+	start|restart)
+		restart
+		;;
+	reload|force-reload)
+		reload
 		;;
 	stop)
 		stop
@@ -337,8 +362,6 @@ case "$1" in
 		echo "usage: $0 (start|stop|restart|status|install|list|add)"
 		echo ""
 		echo "available methods for add:"
-		echo "  ipt_rule [4|6] <table> <chain> <protocol> <target> [extra-params]"
-		echo "  ipt_state_rule [4|6] <table> <chain> <protocol> <target> <states> [extra-params]"
 		echo "  ipt_allow_port <protocol> <port>[:<range>]"
 		echo "  ipt_notrack_port <protocol> <port>[:<range>]"
 		exit 1
