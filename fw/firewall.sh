@@ -293,15 +293,20 @@ add () {
 		echo "run \"$0 install\" first"
 		exit 1
 	fi
-	merged="$@"
-	grep "^${merged}$" $RULES_FILE > /dev/null
+	rule="$@"
+	expr match "$rule" "^ipt_.*" > /dev/null
+	if [ $? -ne 0 ]; then
+		echo "rule does not start with ipt_  ; this cant be correct"
+		exit 1
+	fi
+	grep "^${rule}$" $RULES_FILE > /dev/null
 	if [ $? -eq 0 ]; then
 		echo "rule already in $RULES_FILE"
 		exit 0
 	fi
 
-	echo "$merged" >> $RULES_FILE
-	echo "restarting firewall"
+	echo "$rule" >> $RULES_FILE
+	echo "reloading firewall"
 	stop ; start
 }
 
