@@ -280,12 +280,32 @@ list () {
 	if [ ! -f $RULES_FILE ]; then
 		echo "config file not found: $RULES_FILE"
 		echo "run \"$0 install\" first"
-	else
-		echo "rules in $RULES_FILE"
-		echo
-		grep "^ipt" $RULES_FILE
+		exit 1
 	fi
+	echo "rules in $RULES_FILE"
+	echo
+	grep "^ipt" $RULES_FILE
 }
+
+add () {
+	if [ ! -f $RULES_FILE ]; then
+		echo "config file not found: $RULES_FILE"
+		echo "run \"$0 install\" first"
+		exit 1
+	fi
+	merged="$@"
+	grep "^${merged}$" $RULES_FILE > /dev/null
+	if [ $? -eq 0 ]; then
+		echo "rule already in $RULES_FILE"
+		exit 0
+	fi
+
+	echo "$merged" >> $RULES_FILE
+	echo "restarting firewall"
+	stop ; start
+}
+
+# TODO: rules in $RULES_FILE through custom chains
 
 case "$1" in 
 	start|restart|reload|force-reload)
@@ -304,8 +324,18 @@ case "$1" in
 	list)
 		list
 		;;
+	add)
+		shift
+		add "$@"
+		;;
 	*)
-		echo "usage: $0 (start|stop|restart|status|install|list)"
+		echo "usage: $0 (start|stop|restart|status|install|list|add)"
+		echo ""
+		echo "available methods for add:"
+		echo "  ipt_rule [4|6] <table> <chain> <protocol> <target> [extra-params]"
+		echo "  ipt_state_rule [4|6] <table> <chain> <protocol> <target> <states> [extra-params]"
+		echo "  ipt_allow_port <protocol> <port>"
+		echo "  ipt_notrack_port <protocol> <port>"
 		exit 1
 		;;
 esac
