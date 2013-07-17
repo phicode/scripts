@@ -181,7 +181,7 @@ ipt_state_rule () {
 	return 0
 }
 
-# syntax: ipt_allow_port <protocol> <port>
+# syntax: ipt_allow_port <protocol> <port>[:<range>]
 ipt_allow_port () {
 	[ $# -ne 2 ] && { echo "ipt_allow_port error: $@" ; return 1 ; }
 	ipt_state_rule filter INPUT  $1 ACCEPT NEW --dport $2
@@ -189,7 +189,7 @@ ipt_allow_port () {
 	return 0
 }
 
-# syntax: ipt_notrack_port <protocol> <port>
+# syntax: ipt_notrack_port <protocol> <port>[:<range>]
 ipt_notrack_port () {
 	[ $# -ne 2 ] && { echo "ipt_notrack_port error: $@" ; return 1 ; }
 	ipt -t raw -A PREROUTING -p $1 --dport $2 -j CT --notrack
@@ -222,8 +222,8 @@ DEFAULT_RULES="
 # available methods:
 #  ipt_rule [4|6] <table> <chain> <protocol> <target> [extra-params]
 #  ipt_state_rule [4|6] <table> <chain> <protocol> <target> <states> [extra-params]
-#  ipt_allow_port <protocol> <port>
-#  ipt_notrack_port <protocol> <port>
+#  ipt_allow_port <protocol> <port>[:<range>]
+#  ipt_notrack_port <protocol> <port>[:<range>]
 #
 # examples:
 #  # statefull services
@@ -339,8 +339,8 @@ case "$1" in
 		echo "available methods for add:"
 		echo "  ipt_rule [4|6] <table> <chain> <protocol> <target> [extra-params]"
 		echo "  ipt_state_rule [4|6] <table> <chain> <protocol> <target> <states> [extra-params]"
-		echo "  ipt_allow_port <protocol> <port>"
-		echo "  ipt_notrack_port <protocol> <port>"
+		echo "  ipt_allow_port <protocol> <port>[:<range>]"
+		echo "  ipt_notrack_port <protocol> <port>[:<range>]"
 		exit 1
 		;;
 esac
