@@ -276,6 +276,17 @@ install () {
 	fi
 }
 
+list () {
+	if [ ! -f $RULES_FILE ]; then
+		echo "config file not found: $RULES_FILE"
+		echo "run \"$0 install\" first"
+	else
+		echo "rules in $RULES_FILE"
+		echo
+		grep "^ipt" $RULES_FILE
+	fi
+}
+
 case "$1" in 
 	start|restart|reload|force-reload)
 		stop
@@ -290,8 +301,11 @@ case "$1" in
 	install)
 		install
 		;;
+	list)
+		list
+		;;
 	*)
-		echo "usage: $0 (start|stop|restart|status|install)"
+		echo "usage: $0 (start|stop|restart|status|install|list)"
 		exit 1
 		;;
 esac
