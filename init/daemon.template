@@ -15,54 +15,65 @@ PROGRAM=/usr/bin/program
 
 DAEMON=$(which daemon)
 if [ "$DAEMON" = "" ] ; then
-	log_failure_msg "daemon utility not found"
-	exit 5
+  log_failure_msg "daemon utility not found"
+  exit 5
 fi
 if [ ! -x $DAEMON ] ; then
-	log_failure_msg "$DAEMON utility is not executable"
-	exit 5
+  log_failure_msg "$DAEMON utility is not executable"
+  exit 5
 fi
 if [ ! -x $PROGRAM ]; then
-	log_failure_msg "$PROGRAM not found or not executable"
-	exit 5
+  log_failure_msg "$PROGRAM not found or not executable"
+  exit 5
 fi
 
 case $1 in
   start)
     if $DAEMON --name $NAME --running ; then
-      	log_success_msg "$NAME is already running"
-    	exit 0
+      log_success_msg "$NAME is already running"
+      exit 0
     fi
     if $DAEMON --name $NAME -- $PROGRAM ; then
-    	log_success_msg "$NAME started"
-    	exit 0
+      log_success_msg "$NAME started"
+      exit 0
     else
-    	log_failure_msg "$NAME failed to start"
-    	exit 1
+      log_failure_msg "$NAME failed to start"
+      exit 1
     fi
     ;;
   stop)
-	if $DAEMON --name $NAME --running ; then
-		if $DAEMON --name $NAME --stop ; then
-      		log_success_msg "$NAME stopped"
-    		exit 0
-    	else
-			log_failure_msg "$NAME failed to stop"
-    		exit 1
-    	fi
+    if $DAEMON --name $NAME --running ; then
+      if $DAEMON --name $NAME --stop ; then
+        log_success_msg "$NAME stopped"
+        exit 0
+      else
+        log_failure_msg "$NAME failed to stop"
+        exit 1
+      fi
     else
-    	log_success_msg "$NAME is not running"
-    	exit 0
+      log_success_msg "$NAME is not running"
+      exit 0
     fi
     ;;
   restart|reload)
-    $0 stop && sleep 1 && $0 start
+    $0 stop
+    i=0
+    while [ $i -lt 20 ]; do
+      sleep 1
+      if $DAEMON --name $NAME --running ; then
+        let i++
+      else
+        i=9999
+        $0 start && exit 0
+      fi
+    done
+    log_failure_msg "$NAME failed to restart"
     ;;
   status)
     if $DAEMON --name $NAME --running ; then
-      	log_success_msg "$NAME is running"
+      log_success_msg "$NAME is running"
     else
-    	log_warning_msg "$NAME is not running"
+      log_warning_msg "$NAME is not running"
     fi
     exit 0
     ;;
