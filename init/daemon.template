@@ -12,7 +12,11 @@
 
 NAME=program
 PROGRAM=/usr/bin/program
+ARGS=""
+RUNDIR=/some/dir
+RUNUSER=root
 
+PATH="$PATH:/usr/local/bin:/usr/local/sbin"
 DAEMON=$(which daemon)
 if [ "$DAEMON" = "" ] ; then
   log_failure_msg "daemon utility not found"
@@ -22,7 +26,7 @@ if [ ! -x $DAEMON ] ; then
   log_failure_msg "$DAEMON utility is not executable"
   exit 5
 fi
-if [ ! -x $PROGRAM ]; then
+if [ ! -x $PROGRAM ] ; then
   log_failure_msg "$PROGRAM not found or not executable"
   exit 5
 fi
@@ -33,40 +37,35 @@ case $1 in
       log_success_msg "$NAME is already running"
       exit 0
     fi
-    if $DAEMON --name $NAME -- $PROGRAM ; then
+    if $DAEMON --name $NAME --chdir $RUNDIR --user $RUNUSER -- $PROGRAM $ARGS ; then
       log_success_msg "$NAME started"
       exit 0
-    else
-      log_failure_msg "$NAME failed to start"
-      exit 1
     fi
+    log_failure_msg "$NAME failed to start"
+    exit 1
     ;;
   stop)
     if $DAEMON --name $NAME --running ; then
       if $DAEMON --name $NAME --stop ; then
-        log_success_msg "$NAME stopped"
-        exit 0
-      else
-        log_failure_msg "$NAME failed to stop"
-        exit 1
+        i=0
+        while [ $i -lt 20 ]; do
+          sleep 1
+          if $DAEMON --name $NAME --running ; then
+            i=$(($i+1))
+          else
+            log_success_msg "$NAME stopped"
+            exit 0
+          fi
+        done
       fi
-    else
-      log_success_msg "$NAME is not running"
-      exit 0
+      log_failure_msg "$NAME failed to stop"
+      exit 1
     fi
+    log_success_msg "$NAME is not running"
+    exit 0
     ;;
   restart|reload)
-    $0 stop
-    i=0
-    while [ $i -lt 20 ]; do
-      sleep 1
-      if $DAEMON --name $NAME --running ; then
-        let i++
-      else
-        i=9999
-        $0 start && exit 0
-      fi
-    done
+    $0 stop && $0 start && exit 0
     log_failure_msg "$NAME failed to restart"
     ;;
   status)
