@@ -16,6 +16,8 @@ ARGS=""
 RUNDIR=/some/dir
 RUNUSER=root
 
+OPTS="--name $NAME --chdir $RUNDIR --user $RUNUSER"
+
 PATH="$PATH:/usr/local/bin:/usr/local/sbin"
 DAEMON=$(which daemon)
 if [ "$DAEMON" = "" ] ; then
@@ -33,11 +35,11 @@ fi
 
 case $1 in
   start)
-    if $DAEMON --name $NAME --running ; then
+    if $DAEMON $OPTS --running ; then
       log_success_msg "$NAME is already running"
       exit 0
     fi
-    if $DAEMON --name $NAME --chdir $RUNDIR --user $RUNUSER -- $PROGRAM $ARGS ; then
+    if $DAEMON $OPTS -- $PROGRAM $ARGS ; then
       log_success_msg "$NAME started"
       exit 0
     fi
@@ -45,12 +47,12 @@ case $1 in
     exit 1
     ;;
   stop)
-    if $DAEMON --name $NAME --running ; then
-      if $DAEMON --name $NAME --stop ; then
+    if $DAEMON $OPTS --running ; then
+      if $DAEMON $OPTS --stop ; then
         i=0
         while [ $i -lt 20 ]; do
           sleep 1
-          if $DAEMON --name $NAME --running ; then
+          if $DAEMON $OPTS --running ; then
             i=$(($i+1))
           else
             log_success_msg "$NAME stopped"
@@ -69,7 +71,7 @@ case $1 in
     log_failure_msg "$NAME failed to restart"
     ;;
   status)
-    if $DAEMON --name $NAME --running ; then
+    if $DAEMON $OPTS --running ; then
       log_success_msg "$NAME is running"
     else
       log_warning_msg "$NAME is not running"
