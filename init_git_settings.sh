@@ -28,3 +28,5 @@ git config --global alias.ci commit
 git config --global alias.co checkout
 git config --global push.default simple
 git config --global alias.lg "log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative"
+# treat all merge's as --ff-only
+git config --global merge.ff only
