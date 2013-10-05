@@ -16,7 +16,7 @@ ARGS=""
 RUNDIR=/some/dir
 RUNUSER=root
 
-OPTS="--name $NAME --chdir $RUNDIR --user $RUNUSER"
+OPTS="--name $NAME --chdir $RUNDIR --user $RUNUSER --respawn"
 
 PATH="$PATH:/usr/local/bin:/usr/local/sbin"
 DAEMON=$(which daemon)
