@@ -24,6 +24,8 @@
 
 # TODO: allow the user to select which branch he wants to use
 
+GO_TOOLS="vet godoc cover"
+
 [ "$(which gcc)" = "" ] && { echo "please install gcc"            ; exit 1 ; }
 [ "$(which hg)" = "" ]  && { echo "please install mercurial (hg)" ; exit 1 ; }
 
@@ -85,7 +87,6 @@ if [ \$? -ne 0 ]; then
 fi
 EOF
 
-
 user_profile="${HOME}/.profile"
 user_bashrc="${HOME}/.bashrc"
 include_str=". ${setup_goprofile}"
@@ -103,6 +104,12 @@ if [ $? -ne 0 ]; then
 	echo "" >> "$user_bashrc"
 	echo "$include_str" >> "$user_bashrc"
 fi
+
+. $setup_goprofile
+for tool in $GO_TOOLS; do
+	echo "installing/updating go-tool: $tool"
+	go get -u "code.google.com/p/go.tools/cmd/$tool"
+done
 
 echo ""
 echo "all done - you might need to restart shells which do not yet have the environment variables"
