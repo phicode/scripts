@@ -52,9 +52,8 @@ start () {
 	ipt6_rule filter INPUT icmpv6 DROP   -m icmp6 --icmpv6-type redirect
 	ipt6_rule filter INPUT icmpv6 ACCEPT
 
-	# keep some counters about which types of packets we are dropping 
-	ipt_rule filter INPUT all DROP -m pkttype --pkt-type broadcast
-	ipt_rule filter INPUT all DROP -m pkttype --pkt-type multicast
+	ipt_rule filter INPUT all ACCEPT -m pkttype --pkt-type broadcast
+	ipt_rule filter INPUT all ACCEPT -m pkttype --pkt-type multicast
 
 	# reject the rest of the input traffic
 	ipt_rule filter INPUT all REJECT
