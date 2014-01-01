@@ -64,22 +64,18 @@ fi
 
 #env CGO_ENABLED=0 GOOS=windows GOARCH=amd64 ./make.bash --no-clean
 
-setup_goroot="$HOME/dev/go"
-setup_gobin="$HOME/dev/go/bin"
-setup_mygo="$HOME/dev/mygo"
-setup_goprofile="${HOME}/.goprofile"
+goprofile="${HOME}/.goprofile"
+gobin="${HOME}/dev/go/bin"
 
-echo "creating $setup_goprofile ..."
-cat > "${setup_goprofile}" << EOF
+echo "creating $goprofile ..."
+cat > "${goprofile}" << EOF
 # go environment setup
 # this file is included from .profile and .bashrc
 
-expr match "\$PATH" ".*${setup_gobin}.*" > /dev/null
+expr match "\$PATH" ".*${gobin}.*" > /dev/null
 if [ \$? -ne 0 ]; then
-	export GOROOT="${setup_goroot}"
-	export GOPATH="${setup_mygo}"
-	export GOBIN="${setup_gobin}"
-	export PATH="${setup_gobin}:\${PATH}"
+	export GOPATH="${HOME}/dev/mygo"
+	export PATH="\${PATH}:${gobin}"
 	
 	# 'go get' will install packages into the first directory of GOPATH
 	# add further include paths for your other local projects in the file \${HOME}/.gopaths
@@ -91,23 +87,23 @@ EOF
 
 user_profile="${HOME}/.profile"
 user_bashrc="${HOME}/.bashrc"
-include_str=". ${setup_goprofile}"
-search_include="^\. ${setup_goprofile}$"
+include_str=". ${goprofile}"
+search_include="^\. ${goprofile}$"
 
 grep "$search_include" "$user_profile" > /dev/null
 if [ $? -ne 0 ]; then
-	echo "adding an include for $setup_goprofile to $user_profile ..."
+	echo "adding an include for $goprofile to $user_profile ..."
 	echo "" >> "$user_profile"
 	echo "$include_str" >> "$user_profile"
 fi
 grep "$search_include" $user_bashrc > /dev/null
 if [ $? -ne 0 ]; then
-	echo "adding an include for $setup_goprofile to $user_bashrc ..."
+	echo "adding an include for $goprofile to $user_bashrc ..."
 	echo "" >> "$user_bashrc"
 	echo "$include_str" >> "$user_bashrc"
 fi
 
-. $setup_goprofile
+. $goprofile
 for tool in $GO_TOOLS; do
 	echo "installing/updating go-tool: $tool"
 	go get -u "code.google.com/p/go.tools/cmd/$tool"
