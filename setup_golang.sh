@@ -34,14 +34,16 @@ die () {
 	exit 1
 }
 
-devdir="${HOME}/dev"
-if [ ! -d $devdir ]; then
-	echo "creating directory $devdir"
-	mkdir "$devdir" || die
+if [ ! -d "${HOME}/dev" ]; then
+	echo "creating directory ${HOME}/dev"
+	mkdir "${HOME}/dev" || die
+fi
+if [ ! -d "${HOME}/dev/mygo" ]; then
+	echo "creating directory ${HOME}/dev/mygo"
+	mkdir "${HOME}/dev/mygo" || die
 fi
 
-cd "$devdir"
-
+cd "${HOME}/dev"
 if [ ! -d "go" ]; then
 	echo "cloning go repo"
 	hg clone "https://code.google.com/p/go" || die
