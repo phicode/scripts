@@ -75,7 +75,7 @@ cat > "${goprofile}" << EOF
 expr match "\$PATH" ".*${gobin}.*" > /dev/null
 if [ \$? -ne 0 ]; then
 	export GOPATH="${HOME}/dev/mygo"
-	export PATH="\${PATH}:${gobin}"
+	export PATH="\${PATH}:${gobin}:${HOME}/dev/mygo/bin"
 	
 	# 'go get' will install packages into the first directory of GOPATH
 	# add further include paths for your other local projects in the file \${HOME}/.gopaths
