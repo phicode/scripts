@@ -55,7 +55,7 @@ else
 	cd src
 fi
 
-./all.bash --clean
+./all.bash --clean || die
 
 # additional archs
 # choose from arch: 386 amd64 arm
