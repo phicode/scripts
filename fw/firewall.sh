@@ -23,6 +23,9 @@ RULES_FILE=/etc/firewall.rules
 [ -x "$(which iptables)" ]  || { echo "iptables not found"  ; exit 1 ; }
 [ -x "$(which ip6tables)" ] || { echo "no ip6tables found"  ; IPV6=n ; }
 
+xtables_lock="-w"
+iptables -w -L -n > /dev/null 2>&1 || xtables_lock=""
+
 start () {
 	set_net_options
 
@@ -146,14 +149,14 @@ set_net_options () {
 # iptables rule for ipv4
 ipt4 () {
 	[ $VERBOSE = "y" ] && echo iptables "$@"
-	iptables "$@"
+	iptables $xtables_lock "$@"
 }
 
 # iptables rule for ipv6
 ipt6 () {
 	[ $IPV6 = "y" ] || return 0
 	[ $VERBOSE = "y" ] && echo ip6tables "$@"
-	ip6tables "$@"
+	ip6tables $xtables_lock  "$@"
 }
 
 # iptables rule for ipv4 and ipv6
@@ -328,6 +331,7 @@ install () {
 		chmod 750 $dst
 		chkconfig --add firewall
 		$dst start
+		exit 2
 	fi
 }
 
@@ -363,6 +367,7 @@ add () {
 	echo "$rule" >> $RULES_FILE
 	echo "reloading firewall"
 	reload
+	exit 2
 }
 
 # TODO: rules in $RULES_FILE through custom chains
