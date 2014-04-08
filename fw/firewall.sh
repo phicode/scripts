@@ -11,6 +11,9 @@
 
 IPV6=y
 VERBOSE=y
+IP_FORWARD=n
+MASQ_INTERFACES=''
+MASQ_NETWORKS=''
 CONF_FILE=/etc/firewall.conf
 RULES_FILE=/etc/firewall.rules
 
@@ -24,8 +27,12 @@ start () {
 	set_net_options
 
 	ipt_policy filter INPUT   ACCEPT
-	ipt_policy filter FORWARD DROP
 	ipt_policy filter OUTPUT  ACCEPT
+	if [ "$IP_FORWARD" = "y" ]; then
+		ipt_policy filter FORWARD ACCEPT
+	else
+		ipt_policy filter FORWARD DROP
+	fi
 
 	# allow localhost
 	ipt_rule filter INPUT  all ACCEPT -i lo
@@ -57,6 +64,8 @@ start () {
 
 	# reject the rest of the input traffic
 	ipt_rule filter INPUT all REJECT
+
+	add_masquerading
 
 	# track outgoing connections by protocol
 	ipt_rule  filter OUTPUT tcp    ACCEPT
@@ -95,15 +104,28 @@ load_user_rules () {
 	ipt -t filter -A user_output -j RETURN
 }
 
+add_masquerading () {
+	for IFC in $MASQ_INTERFACES; do
+		ipt4 -t nat -A POSTROUTING -o $IFC -j MASQUERADE
+	done
+	for NET in $MASQ_NETWORKS; do
+		ipt4 -t nat -A POSTROUTING --source $NET ! --destination $NET -j MASQUERADE
+	done
+}
+
 set_net_options () {
 	# enable reverse-path filtering
 	# -> filter out traffic from spoofed source addresses
 	echo 1 > /proc/sys/net/ipv4/conf/all/rp_filter
 
-	# disable packet forwarding
-	echo 0 > /proc/sys/net/ipv4/ip_forward
-	echo 0 > /proc/sys/net/ipv4/conf/all/forwarding
-	echo 0 > /proc/sys/net/ipv6/conf/all/forwarding
+	# enable/disable packet forwarding
+	FWD_VAL=0
+	if [ "$IP_FORWARD" = "y" ]; then
+		FWD_VAL=1
+	fi
+	echo $FWD_VAL > /proc/sys/net/ipv4/ip_forward
+	echo $FWD_VAL > /proc/sys/net/ipv4/conf/all/forwarding
+	echo $FWD_VAL > /proc/sys/net/ipv6/conf/all/forwarding
 
 	# enable syn-cookies
 	echo 1 > /proc/sys/net/ipv4/tcp_syncookies
@@ -243,6 +265,17 @@ VERBOSE=n
 
 # set to 'n' if no IPv6 rules should be generated
 IPV6=y
+
+# ip forwarding
+IP_FORWARD=n
+
+# masquerade interfaces
+# MASQ_INTERFACES='ethX brY'
+MASQ_INTERFACES=''
+
+# masquerade networks
+# MASQ_NETWORKS='10.0.0.0/24 10.1.0.0/24'
+MASQ_NETWORKS=''
 "
 DEFAULT_RULES="
 # custom firewall rules
