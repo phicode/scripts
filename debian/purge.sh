@@ -38,5 +38,6 @@ done
 
 aptitude autoclean
 aptitude clean
+apt-get autoremove
 
 echo "done"
