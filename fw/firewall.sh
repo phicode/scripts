@@ -31,11 +31,7 @@ start () {
 
 	ipt_policy filter INPUT   ACCEPT
 	ipt_policy filter OUTPUT  ACCEPT
-	if [ "$IP_FORWARD" = "y" ]; then
-		ipt_policy filter FORWARD ACCEPT
-	else
-		ipt_policy filter FORWARD DROP
-	fi
+	ipt_policy filter FORWARD DROP
 
 	# allow localhost
 	ipt_rule filter INPUT  all ACCEPT -i lo
@@ -109,10 +105,16 @@ load_user_rules () {
 
 add_masquerading () {
 	for IFC in $MASQ_INTERFACES; do
-		ipt4 -t nat -A POSTROUTING -o $IFC -j MASQUERADE
+		ipt4 -t nat -A POSTROUTING ! -o $IFC -j MASQUERADE
+		ipt4_state_rule filter FORWARD all ACCEPT "ESTABLISHED,RELATED" -o $IFC
+		ipt4_rule       filter FORWARD all ACCEPT -i $IFC ! -o $IFC
+		ipt4_rule       filter FORWARD all ACCEPT -i $IFC -o $IFC
 	done
 	for NET in $MASQ_NETWORKS; do
 		ipt4 -t nat -A POSTROUTING --source $NET ! --destination $NET -j MASQUERADE
+		ipt4_state_rule filter FORWARD all ACCEPT "ESTABLISHED,RELATED" --destination $NET
+		ipt4_rule       filter FORWARD all ACCEPT --source $NET ! --destination $NET
+		ipt4_rule       filter FORWARD all ACCEPT --source $NET --destination $NET
 	done
 }
 
