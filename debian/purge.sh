@@ -36,8 +36,8 @@ while [ ${#packages} -ne 1 ]; do # there is a space in there :D
 	packages=$(find_purgable_packages)
 done
 
+apt-get autoremove
 aptitude autoclean
 aptitude clean
-apt-get autoremove
 
 echo "done"
