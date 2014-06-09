@@ -376,9 +376,7 @@ add () {
 	exit 2
 }
 
-# TODO: rules in $RULES_FILE through custom chains
-
-case "$1" in 
+case "$1" in
 	start|restart)
 		restart
 		;;
