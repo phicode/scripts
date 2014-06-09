@@ -301,8 +301,8 @@ ipt_allow_port tcp 22 # ssh
 "
 
 install () {
-	if [ ! -e "$(which chkconfig)" ]; then
-		echo "program chkconfig not found"
+	if [ ! -e "$(which update-rc.d)" -a ! -e "$(which chkconfig)" ]; then
+		echo "programs update-rc.d or chkconfig not found"
 		exit 1
 	fi
 
@@ -331,7 +331,11 @@ install () {
 		echo "installing firewall to $dst"
 		cp $0 $dst
 		chmod 750 $dst
-		chkconfig --add firewall
+		if [ -e "$(which update-rc.d)" ]; then
+			update-rc.d firewall enable
+		else
+			chkconfig --add firewall
+		fi
 		$dst start
 		exit 2
 	fi
