@@ -105,9 +105,14 @@ load_user_rules () {
 
 add_masquerading () {
 	for IFC in $MASQ_INTERFACES; do
-		ipt4 -t nat -A POSTROUTING ! -o $IFC -j MASQUERADE
-		ipt4_state_rule filter FORWARD all ACCEPT "ESTABLISHED,RELATED" -o $IFC
-		ipt4_rule       filter FORWARD all ACCEPT -i $IFC ! -o $IFC
+		ipt4 -t nat -A POSTROUTING -o $IFC -j MASQUERADE
+		ipt4_state_rule filter FORWARD all ACCEPT "ESTABLISHED,RELATED" -i $IFC
+		ipt4_rule       filter FORWARD all ACCEPT ! -i $IFC -o $IFC
+	done
+	for IFC in $MASQ_INTERNAL_INTERFACES; do
+		ipt4 -t nat -A POSTROUTING -o $IFC -j MASQUERADE
+		ipt4_state_rule filter FORWARD all ACCEPT "ESTABLISHED,RELATED" -i $IFC
+		ipt4_rule       filter FORWARD all ACCEPT ! -i $IFC -o $IFC
 		ipt4_rule       filter FORWARD all ACCEPT -i $IFC -o $IFC
 	done
 	for NET in $MASQ_NETWORKS; do
@@ -275,7 +280,11 @@ IPV6=y
 IP_FORWARD=n
 
 # masquerade interfaces
-# MASQ_INTERFACES='ethX brY'
+# MASQ_INTERFACES='ethX ethY'
+MASQ_INTERFACES=''
+
+# masquerade internal interfaces (for example: virtual-machine/container bridges)
+# MASQ_INTERFACES='brX brY'
 MASQ_INTERFACES=''
 
 # masquerade networks
