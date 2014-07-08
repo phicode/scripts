@@ -73,10 +73,11 @@ case $1 in
   status)
     if $DAEMON $OPTS --running ; then
       log_success_msg "$NAME is running"
+      exit 0
     else
       log_warning_msg "$NAME is not running"
+      exit 3
     fi
-    exit 0
     ;;
   *)
     echo "usage: $0 {start|stop|restart|reload|status}"

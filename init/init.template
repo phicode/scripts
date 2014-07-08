@@ -54,9 +54,12 @@ case $1 in
     if [ -e $PIDFILE ]; then
       if pidofproc -p $PIDFILE $DAEMON ; then
       	log_success_msg "$name is running"
+        exit 0
       fi
+      exit 1
     fi
     log_success_msg "$NAME is not running"
+    exit 3
     ;;
   reload)
     if [ -e $PIDFILE ]; then
