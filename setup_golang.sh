@@ -63,7 +63,11 @@ else
 fi
 hg update $1
 
-./all.bash --clean || die
+if [ -z $MAKE_ONLY ]; then
+	./all.bash --clean || die
+else
+	./make.bash || die
+fi
 
 # additional archs
 # choose from arch: 386 amd64 arm
