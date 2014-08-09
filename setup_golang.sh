@@ -31,7 +31,7 @@ if [ $# -ne 1 ]; then
 fi
 
 
-GO_TOOLS="vet godoc cover"
+GO_TOOLS="vet godoc cover oracle"
 
 [ "$(which gcc)" = "" ] && { echo "please install gcc"            ; exit 1 ; }
 [ "$(which hg)" = "" ]  && { echo "please install mercurial (hg)" ; exit 1 ; }
