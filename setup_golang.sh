@@ -22,7 +22,14 @@
 
 # A script for setting up a go development environment
 
-# TODO: allow the user to select which branch he wants to use
+if [ $# -ne 1 ]; then
+	echo "usage: $0 <branch/tag>"
+	echo ""
+	echo "example: $0 release"
+	echo "         $0 tip"
+	exit 1
+fi
+
 
 GO_TOOLS="vet godoc cover"
 
@@ -54,6 +61,7 @@ else
 	hg pull --update || die
 	cd src
 fi
+hg update $1
 
 ./all.bash --clean || die
 
