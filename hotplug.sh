@@ -20,25 +20,19 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-scan() {
-	for h in /sys/class/scsi_host/host*; do
-		echo "- - -" > "${h}/scan"
-	done
-}
-
-eject() {
-	if [ $# -ne 2 ]; then
-		echo "usage: $0 eject <device>"
-		echo "   =>  $0 eject sdX"
-		exit 1
-	fi
-	echo 1 > /sys/block/$2/device/delete
-}
-
 case "$1" in
-	scan)	scan
+	scan)
+		for h in /sys/class/scsi_host/host*; do
+			echo "- - -" > "${h}/scan"
+		done
 		;;
-	eject)  eject
+	eject)
+		if [ $# -ne 2 ]; then
+			echo "usage: $0 eject <device>"
+			echo "   =>  $0 eject sdX"
+			exit 1
+		fi
+		echo 1 > /sys/block/$2/device/delete
 		;;
 	*)
 		echo "usage: $0 (scan|eject)"
