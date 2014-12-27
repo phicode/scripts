@@ -22,46 +22,45 @@
 
 # A script for setting up a go development environment
 
+GO_TOOLS="benchcmp callgraph cover digraph eg godex godoc goimports gorename gotype oracle stringer vet"
+
+GO_PREFIX=/usr/local
+
 if [ $# -ne 1 ]; then
 	echo "usage: $0 <branch/tag>"
 	echo ""
-	echo "example: $0 release"
-	echo "         $0 tip"
+	echo "example: $0 master"
+	echo "         $0 release-branch.go1.4"
+	echo ""
+	echo "installs golang into ${GO_PREFIX}/go"
 	exit 1
 fi
 
+if [ $(id -u) -ne 0 ]; then
+	echo "must be run as root"
+	exit 1
+fi
 
-GO_TOOLS="vet godoc cover oracle callgraph"
-
-[ "$(which gcc)" = "" ] && { echo "please install gcc"            ; exit 1 ; }
-[ "$(which hg)" = "" ]  && { echo "please install mercurial (hg)" ; exit 1 ; }
+[ "$(which gcc)" = "" ] && { echo "please install gcc" ; exit 1 ; }
+[ "$(which git)" = "" ] && { echo "please install git" ; exit 1 ; }
 
 die () {
 	echo "aborting due to failure"
 	exit 1
 }
 
-if [ ! -d "${HOME}/dev" ]; then
-	echo "creating directory ${HOME}/dev"
-	mkdir "${HOME}/dev" || die
-fi
-if [ ! -d "${HOME}/dev/mygo" ]; then
-	echo "creating directory ${HOME}/dev/mygo"
-	mkdir "${HOME}/dev/mygo" || die
-fi
-
-cd "${HOME}/dev"
+cd "$GO_PREFIX"
 if [ ! -d "go" ]; then
 	echo "cloning go repo"
-	hg clone "https://code.google.com/p/go" || die
+	git clone "https://github.com/golang/go" || die
 	cd go/src
 else
 	cd go
 	echo "updating go repo"
-	hg pull --update || die
+	git pull || die
 	cd src
 fi
-hg update $1
+git checkout $1 || die
 
 if [ -z $MAKE_ONLY ]; then
 	./all.bash --clean || die
@@ -69,57 +68,32 @@ else
 	./make.bash || die
 fi
 
+export PATH="${GO_PREFIX}/go/bin:$PATH"
+mkdir -p "${GO_PREFIX}/go-tools"
+export GOPATH="${GO_PREFIX}/go-tools"
+for tool in $GO_TOOLS; do
+	echo "installing/updating go-tool: $tool"
+	go get -u -v "golang.org/x/tools/cmd/$tool"
+done
+
+grep "${GO_PREFIX}/go/bin" /etc/profile > /dev/null || {
+	echo "adding PATH variables to /etc/profile:"
+	echo "    ${GO_PREFIX}/go/bin"
+	echo "    ${GO_PREFIX}/go-tools/bin"
+	echo "    \${HOME}/go/bin"
+	echo "export PATH=\"\${PATH}:${GO_PREFIX}/go/bin:${GO_PREFIX}/go-tools/bin:\${HOME}/go/bin\"" >> /etc/profile
+}
+grep "^export GOPATH" /etc/profile > /dev/null || {
+	echo "adding GOPATH='\${HOME}/go' to /etc/profile"
+	echo "export GOPATH=\"\${HOME}/go\"" >> /etc/profile
+}
+
 # additional archs
 # choose from arch: 386 amd64 arm
 #               os: linux windows darwin freebsd openbsd netbsd plan9
 # build with env CGO_ENABLED=0 GOOS=... GOARCH=... go build ...
 
 #env CGO_ENABLED=0 GOOS=windows GOARCH=amd64 ./make.bash --no-clean
-
-goprofile="${HOME}/.goprofile"
-gobin="${HOME}/dev/go/bin"
-
-echo "creating $goprofile ..."
-cat > "${goprofile}" << EOF
-# go environment setup
-# this file is included from .profile and .bashrc
-
-expr match "\$PATH" ".*${gobin}.*" > /dev/null
-if [ \$? -ne 0 ]; then
-	export GOPATH="${HOME}/dev/mygo"
-	export PATH="\${PATH}:${gobin}:${HOME}/dev/mygo/bin"
-	
-	# 'go get' will install packages into the first directory of GOPATH
-	# add further include paths for your other local projects in the file \${HOME}/.gopaths
-	#  export GOPATH="\$GOPATH:/path/to/other/project"
-	
-	[ -f "\${HOME}/.gopaths" ] && . "\${HOME}/.gopaths"
-fi
-EOF
-
-user_profile="${HOME}/.profile"
-user_bashrc="${HOME}/.bashrc"
-include_str=". ${goprofile}"
-search_include="^\. ${goprofile}$"
-
-grep "$search_include" "$user_profile" > /dev/null
-if [ $? -ne 0 ]; then
-	echo "adding an include for $goprofile to $user_profile ..."
-	echo "" >> "$user_profile"
-	echo "$include_str" >> "$user_profile"
-fi
-grep "$search_include" $user_bashrc > /dev/null
-if [ $? -ne 0 ]; then
-	echo "adding an include for $goprofile to $user_bashrc ..."
-	echo "" >> "$user_bashrc"
-	echo "$include_str" >> "$user_bashrc"
-fi
-
-. $goprofile
-for tool in $GO_TOOLS; do
-	echo "installing/updating go-tool: $tool"
-	go get -u "code.google.com/p/go.tools/cmd/$tool"
-done
 
 echo ""
 echo "all done - you might need to restart shells which do not yet have the environment variables"
