@@ -73,7 +73,7 @@ mkdir -p "${GO_PREFIX}/go-tools"
 export GOPATH="${GO_PREFIX}/go-tools"
 for tool in $GO_TOOLS; do
 	echo "installing/updating go-tool: $tool"
-	go get -u -v "golang.org/x/tools/cmd/$tool"
+	go get -u "golang.org/x/tools/cmd/$tool"
 done
 
 grep "${GO_PREFIX}/go/bin" /etc/profile > /dev/null || {
