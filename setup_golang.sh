@@ -30,7 +30,7 @@ if [ $# -ne 1 ]; then
 	echo "usage: $0 <branch/tag>"
 	echo ""
 	echo "example: $0 master"
-	echo "         $0 release-branch.go1.4"
+	echo "         $0 go1.4"
 	echo ""
 	echo "installs golang into ${GO_PREFIX}/go"
 	exit 1
@@ -53,14 +53,17 @@ cd "$GO_PREFIX"
 if [ ! -d "go" ]; then
 	echo "cloning go repo"
 	git clone "https://github.com/golang/go" || die
-	cd go/src
+	cd go
 else
 	cd go
 	echo "updating go repo"
-	git pull || die
-	cd src
+	git fetch || die
 fi
+rm -rf bin pkg
 git checkout $1 || die
+git clean -f || die
+git merge origin/$1
+cd src
 
 if [ -z $MAKE_ONLY ]; then
 	./all.bash --clean || die
