@@ -23,8 +23,9 @@
 # A script for setting up a go development environment
 
 GO_TOOLS="benchcmp callgraph cover digraph eg godex godoc goimports gorename gotype oracle stringer vet"
-
 GO_PREFIX=/usr/local
+
+export GO_BOOTSTRAP="${GO_PREFIX}/go1.4"
 
 if [ $# -ne 1 ]; then
 	echo "usage: $0 <branch/tag>"

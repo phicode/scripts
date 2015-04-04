@@ -22,8 +22,8 @@
 
 # A script for setting up a go 1.4 bootstrap environment
 
-GO_BRANCH="go1.4.2"
 GO_PREFIX=/usr/local
+GO_BOOTSTRAP_BRANCH="go1.4.2"
 GO_BOOTSTRAP="${GO_PREFIX}/go1.4"
 
 if [ $(id -u) -ne 0 ]; then
@@ -34,31 +34,29 @@ fi
 [ "$(which gcc)" = "" ] && { echo "please install gcc" ; exit 1 ; }
 [ "$(which git)" = "" ] && { echo "please install git" ; exit 1 ; }
 
-die () {
+die_bootstrap () {
 	rm -rf "$GO_BOOTSTRAP"
 	echo "aborting due to failure"
 	exit 1
 }
 
-cd "$GO_PREFIX"
-
 if [ ! -d "$GO_BOOTSTRAP" ]; then
 	echo "cloning go repo for bootstrapping"
-	git clone "https://github.com/golang/go" "$GO_BOOTSTRAP" || die
+	git clone "https://github.com/golang/go" "$GO_BOOTSTRAP" || die_bootstrap
 	cd "$GO_BOOTSTRAP"
 else
 	echo "updating go repo"
 	cd "$GO_BOOTSTRAP"
-	git fetch || die
+	git fetch || die_bootstrap
 fi
 
 rm -rf bin pkg
-git checkout "$GO_BRANCH" || die
-git clean -f || die
-git merge origin/"$GO_BRANCH"
+git checkout "$GO_BOOTSTRAP_BRANCH" || die_bootstrap
+git clean -f || die_bootstrap
+git merge origin/"$GO_BOOTSTRAP_BRANCH"
 cd src
 
-./all.bash --clean || die
+./all.bash --clean || die_bootstrap
 
 echo ""
 echo "all done"
