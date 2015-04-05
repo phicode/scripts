@@ -61,6 +61,7 @@ else
 	git fetch || die
 fi
 rm -rf bin pkg
+git clean -f || die
 git checkout $1 || die
 git clean -f || die
 git merge origin/$1
