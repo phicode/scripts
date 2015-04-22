@@ -22,7 +22,7 @@
 
 # A script for setting up a go development environment
 
-GO_TOOLS="benchcmp callgraph cover digraph eg godex godoc goimports gorename gotype oracle stringer vet"
+GO_TOOLS="benchcmp callgraph cover digraph eg godex godoc goimports gomvpkg gorename gotype oracle stringer vet"
 GO_PREFIX=/usr/local
 
 export GOROOT_BOOTSTRAP="${GO_PREFIX}/go1.4"
