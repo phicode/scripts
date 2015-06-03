@@ -56,7 +56,7 @@ git clean -f || die_bootstrap
 git merge origin/"$GO_BOOTSTRAP_BRANCH"
 cd src
 
-./all.bash --clean || die_bootstrap
+./make.bash --clean || die_bootstrap
 
 echo ""
 echo "all done"
