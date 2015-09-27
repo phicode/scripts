@@ -23,7 +23,7 @@
 # A script for setting up a go 1.4 bootstrap environment
 
 GO_PREFIX=/usr/local
-GO_BOOTSTRAP_BRANCH="go1.4.2"
+GO_BOOTSTRAP_BRANCH="go1.4.3"
 GO_BOOTSTRAP="${GO_PREFIX}/go1.4"
 
 if [ $(id -u) -ne 0 ]; then
