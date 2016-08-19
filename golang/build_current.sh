@@ -22,7 +22,6 @@
 
 # A script for setting up a go development environment
 
-GO_TOOLS="benchcmp callgraph cover digraph eg godex godoc goimports gomvpkg gorename gotype oracle stringer vet"
 GO_PREFIX=/usr/local
 
 export GOROOT_BOOTSTRAP="${GO_PREFIX}/go1.4"
@@ -73,26 +72,6 @@ else
 	./make.bash || die
 fi
 
-export PATH="${GO_PREFIX}/go/bin:$PATH"
-mkdir -p "${GO_PREFIX}/go-tools"
-export GOPATH="${GO_PREFIX}/go-tools"
-for tool in $GO_TOOLS; do
-	echo "installing/updating go-tool: $tool"
-	go get -u "golang.org/x/tools/cmd/$tool"
-done
-
-grep "${GO_PREFIX}/go/bin" /etc/profile > /dev/null || {
-	echo "adding PATH variables to /etc/profile:"
-	echo "    ${GO_PREFIX}/go/bin"
-	echo "    ${GO_PREFIX}/go-tools/bin"
-	echo "    \${HOME}/go/bin"
-	echo "export PATH=\"\${PATH}:${GO_PREFIX}/go/bin:${GO_PREFIX}/go-tools/bin:\${HOME}/go/bin\"" >> /etc/profile
-}
-grep "^export GOPATH" /etc/profile > /dev/null || {
-	echo "adding GOPATH='\${HOME}/go' to /etc/profile"
-	echo "export GOPATH=\"\${HOME}/go\"" >> /etc/profile
-}
-
 # additional archs
 # choose from arch: 386 amd64 arm
 #               os: linux windows darwin freebsd openbsd netbsd plan9
@@ -101,4 +80,4 @@ grep "^export GOPATH" /etc/profile > /dev/null || {
 #env CGO_ENABLED=0 GOOS=windows GOARCH=amd64 ./make.bash --no-clean
 
 echo ""
-echo "all done - you might need to restart shells which do not yet have the environment variables"
+echo "all done"
